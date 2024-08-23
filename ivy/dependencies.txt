@@ -1,0 +1,11 @@
+com.github.TutorialsAndroid:FilePicker:v8.0.19
+com.github.andremion:counterfab:1.2.2
+com.github.omadahealth:lollipin:2.1.0@aar
+com.github.AppIntro:AppIntro:6.2.0
+com.github.skydoves:elasticviews:2.0.4
+com.github.Hatzen:ProfilePictureGenerator:0.7.2b
+com.github.anrwatchdog:anrwatchdog:1.4.0
+com.github.Hatzen:ChatKit:master-SNAPSHOT
+com.github.SysdataSpA:FancyAccordionView:1.0.0
+com.github.tingyik90:snackprogressbar:6.4.0
+com.github.bumptech.glide:glide:4.15.1
