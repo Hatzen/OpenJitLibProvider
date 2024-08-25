@@ -15,33 +15,15 @@ def run_command(command, cwd=None):
         subprocess.run(command, cwd=cwd, check=True, shell=True)
     except subprocess.CalledProcessError as e:
         print(f"Command {command} failed with error: {e}")
-        raise
 
 def clone_repo(repo_url, clone_dir):
     run_command(['git', 'clone', repo_url, clone_dir])
 
 def checkout_tag(repo_dir, tag):
-    run_command(['git', 'checkout', f'tags/{tag}'], cwd=repo_dir)
-
-def update_gradle_wrapper(repo_dir, gradle_version="8.1.1"):
-    gradle_wrapper_properties = os.path.join(repo_dir, 'gradle/wrapper/gradle-wrapper.properties')
-
-    if os.path.exists(gradle_wrapper_properties):
-        # Update the distribution URL in gradle-wrapper.properties
-        with open(gradle_wrapper_properties, 'r') as file:
-            content = file.readlines()
-
-        updated_content = []
-        for line in content:
-            if line.startswith("distributionUrl"):
-                line = f"distributionUrl=https\\://services.gradle.org/distributions/gradle-{gradle_version}-bin.zip\n"
-            updated_content.append(line)
-
-        with open(gradle_wrapper_properties, 'w') as file:
-            file.writelines(updated_content)
-
-    # Update the gradle wrapper itself
-    # run_command(['gradlew.bat', 'wrapper', f'--gradle-version={gradle_version}'], cwd=repo_dir)
+    try:
+        run_command(['git', 'checkout', f'tags/{tag}'], cwd=repo_dir)
+    except:
+        run_command(['git', 'checkout', f'tags/v{tag}'], cwd=repo_dir)
 
 def set_java_home(java_home_path):
     os.environ['JAVA_HOME'] = java_home_path
