@@ -5,13 +5,10 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
 from flask import Flask, request, send_file, abort
 from git_utils import clone_and_checkout
-from build_utils import update_build_files, build_project, find_artifact_file, save_artifact
+from build_utils import update_build_files, build_project, find_artifact_file, save_artifact, getArtifactDest
 from maven_utils import generate_maven_metadata, generate_pom_file
 from error_handler import log_method_output
-
-# Load configuration
-LOCAL_REPO_PATH = "../repo/"
-LOCAL_CLONE_PATH = "../tmp/"
+from consts import LOCAL_CLONE_PATH, LOCAL_REPO_PATH
 
 app = Flask(__name__)
 
@@ -31,24 +28,21 @@ def repository(artifact_path: str):
     artifact_dir = os.path.join(LOCAL_REPO_PATH, organization, module, version)
     artifact_file = os.path.join(artifact_dir, file_name)
 
+    response = log_method_output(getArtifact, (organization, module, version, artifact_file), {}, organization, module, version, file_name)
+    if response:
+        return response
+    abort(500, "Could not get or create artifact")
+    
+
+def getArtifact(organization, module, version, artifact_file):
     if not os.path.exists(artifact_file):
         artifact_file = handle_artifact_request(organization, module, version)
 
+    print(artifact_file)
     if artifact_file and os.path.exists(artifact_file):
         return send_file(artifact_file)
 
     abort(404, "Artifact not found")
-    # log_method_output(getArtifact, (organization, module, version, artifact_file), {}, organization, module, version, file_name)
-    
-
-    # def getArtifact(organization, module, version, artifact_file):
-    #    if not os.path.exists(artifact_file):
-    #        artifact_file = handle_artifact_request(organization, module, version)
-
-    #    if artifact_file and os.path.exists(artifact_file):
-    #        return send_file(artifact_file)
-
-    #    abort(404, "Artifact not found")
 
 def handle_artifact_request(organization, module, version):
     repo_url = f"https://github.com/{organization}/{module}.git"
@@ -59,8 +53,9 @@ def handle_artifact_request(organization, module, version):
         clone_and_checkout(repo_url, version, clone_dir)
         
         if os.path.exists(os.path.join(clone_dir, "build")):
-            print(f"Build already exists, skipping: {clone_dir}")
-            return None
+            # print(f"Build already exists, skipping: {clone_dir}")
+            # TODO: Check if pom works..
+            return os.path.join(getArtifactDest(organization, module, version))
         
         update_build_files(clone_dir)
         build_project(clone_dir)

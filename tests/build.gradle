@@ -1,0 +1,17 @@
+
+plugins {
+    id 'java'
+}
+
+
+repositories {
+    mavenCentral()
+    maven {
+        url 'http://localhost:5000/repository'
+        allowInsecureProtocol = true
+    }
+}
+
+dependencies {
+    implementation 'com.github.Hatzen:ProfilePictureGenerator:0.7.2b'
+}

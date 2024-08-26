@@ -17,7 +17,7 @@ def log_method_output(method, args, kwargs, organization, module, version, file_
     :param file_name: The base name of the file to include the timestamp.
     """
     timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-    log_dir = os.path.join("../logs", organization, module, version)
+    log_dir = os.path.join("/logs", organization, module, version)
     
     # Ensure the target folder exists
     os.makedirs(log_dir, exist_ok=True)
@@ -52,6 +52,9 @@ def log_method_output(method, args, kwargs, organization, module, version, file_
        
        '''
         
+        # TODO: Should we remove the long build logs?
+        # print(sys.stdout.getvalue())
+        print("Sucess for " + file_name)
         return output
             
     except Exception as e:
@@ -66,10 +69,15 @@ def log_method_output(method, args, kwargs, organization, module, version, file_
             traceback.print_exc(file=log_file)
             log_file.write("\nException Message:\n")
             log_file.write(str(e))
-            
+            log_file.write("\nStdout:\n")
+            log_file.write(sys.stdout.getvalue())
+            log_file.write("\StdErr:\n")
+            log_file.write(sys.stderr.getvalue())
+
         # Restore original stdout and stderr
         sys.stdout = original_stdout
         sys.stderr = original_stderr
         
-        print("Error for " + file_name + " see log " + log_file)
+            
+        print("Error for " + file_name + " see log " + log_file_path)
     

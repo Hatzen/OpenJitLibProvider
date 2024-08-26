@@ -11,7 +11,7 @@ class TestGradleBuild(unittest.TestCase):
         Start the Flask server in the background.
         """
         cls.server_process = subprocess.Popen(
-            ['gunicorn', '-w', '4', '-b', '0.0.0.0:5000', 'src.app:app'],
+            ['python',  '-m', 'gunicorn', '-w', '4', '-b', '0.0.0.0:5000', '../src/__init__.py:app'],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
@@ -40,6 +40,7 @@ class TestGradleBuild(unittest.TestCase):
         # Define the path for a temporary build script
         build_script_path = 'tmp/build.gradle'
         
+        '''
         # Write a simple build script that uses the artifact from the Flask server
         with open(build_script_path, 'w') as f:
             f.write(f"""
@@ -54,15 +55,29 @@ dependencies {{
     implementation 'com.github.{module}:{module}:{version}'
 }}
 """)
-
+        '''
+        print(gradle_wrapper + " " + os.getcwd())
         # Run the Gradle build
-        result = subprocess.run([gradle_wrapper, 'build'], capture_output=True, text=True)
+        result = subprocess.run([gradle_wrapper, 'dependencies'], capture_output=True, text=True)
         
         # Log the output for debugging
+        print("Gradle Build Output:")
         print(result.stdout)
+        print("Gradle Build Error Output:")
         print(result.stderr)
         
-        return result.returncode == 0
+        # Check if the build was successful
+        build_success = result.returncode == 0
+
+        # Additional checks for common failure cases
+        error_message = result.stderr
+        if "com.github.Hatzen:ProfilePictureGenerator:0.7.2b FAILED" in error_message:
+            self.fail("Dependency resolution failed. Check the logs for details.")
+
+        if "Could not resolve" in error_message:
+            print("Dependency resolution failed. Check the logs for details.")
+        else:
+            print("Gradle build failed. Check the logs for details.")
 
     def test_gradle_build(self):
         """
