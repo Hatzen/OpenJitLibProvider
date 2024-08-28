@@ -3,7 +3,32 @@ import datetime
 import traceback
 import sys
 from io import StringIO
+from consts import LOCAL_LOGS_PATH
 
+import threading                                                                
+import functools                                                                
+import time                                                                     
+
+# Use synchronize so error logs wont mix sys.stdout
+# https://stackoverflow.com/a/29163532/8524651
+def synchronized(wrapped):                                                      
+    lock = threading.Lock()            
+    id(lock)                                                        
+    @functools.wraps(wrapped)                                                   
+    def _wrap(*args, **kwargs):                                                 
+        with lock:                                                              
+            print ("Calling '%s' with Lock %s from thread %s [%s]"              
+                   % (wrapped.__name__, id(lock),                               
+                   threading.current_thread().name, time.time()))               
+            result = wrapped(*args, **kwargs)                                   
+            print ("Done '%s' with Lock %s from thread %s [%s]"                 
+                   % (wrapped.__name__, id(lock),                               
+                   threading.current_thread().name, time.time()))               
+            return result                                                       
+    return _wrap                                                                
+
+
+@synchronized   
 def log_method_output(method, args, kwargs, organization, module, version, file_name):
     """
     Executes a method and logs its output and errors to a file while preventing stdout and stderr output to the console.
@@ -17,13 +42,14 @@ def log_method_output(method, args, kwargs, organization, module, version, file_
     :param file_name: The base name of the file to include the timestamp.
     """
     timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-    log_dir = os.path.join("/logs", organization, module, version)
+    log_dir = os.path.join(LOCAL_LOGS_PATH, organization, module, version)
     
     # Ensure the target folder exists
     os.makedirs(log_dir, exist_ok=True)
     
     log_file_path = os.path.join(log_dir, f"{file_name}-{timestamp}.txt")
     
+    # TODO: Check if this leads to problem with multi threading, which would be expected.
     # Backup current stdout and stderr
     original_stdout = sys.stdout
     original_stderr = sys.stderr

@@ -1,3 +1,4 @@
 
-LOCAL_REPO_PATH = "../repo/"
-LOCAL_CLONE_PATH = "../tmp/"
+LOCAL_REPO_PATH = "repo/"
+LOCAL_CLONE_PATH = "tmp/"
+LOCAL_LOGS_PATH = "logs/"

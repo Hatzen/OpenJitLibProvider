@@ -37,34 +37,15 @@ class TestGradleBuild(unittest.TestCase):
         # Ensure the `tmp` directory exists
         os.makedirs('tmp', exist_ok=True)
         
-        # Define the path for a temporary build script
-        build_script_path = 'tmp/build.gradle'
-        
-        '''
-        # Write a simple build script that uses the artifact from the Flask server
-        with open(build_script_path, 'w') as f:
-            f.write(f"""
-repositories {{
-    maven {{}}
-    maven {{
-        url 'http://localhost:5000/repository'
-    }}
-}}
-
-dependencies {{
-    implementation 'com.github.{module}:{module}:{version}'
-}}
-""")
-        '''
-        print(gradle_wrapper + " " + os.getcwd())
         # Run the Gradle build
         result = subprocess.run([gradle_wrapper, 'dependencies'], capture_output=True, text=True)
         
         # Log the output for debugging
-        print("Gradle Build Output:")
-        print(result.stdout)
-        print("Gradle Build Error Output:")
-        print(result.stderr)
+        #print(gradle_wrapper + " " + os.getcwd())
+        # print("Gradle Build Output:")
+        # print(result.stdout)
+        # print("Gradle Build Error Output:")
+        # print(result.stderr)
         
         # Check if the build was successful
         build_success = result.returncode == 0
@@ -75,9 +56,10 @@ dependencies {{
             self.fail("Dependency resolution failed. Check the logs for details.")
 
         if "Could not resolve" in error_message:
-            print("Dependency resolution failed. Check the logs for details.")
-        else:
-            print("Gradle build failed. Check the logs for details.")
+            self.fail("Dependency resolution failed. Check the logs for details.")
+
+        if "Failed" in error_message:
+            self.fail("Dependency resolution failed. Check the logs for details.")
 
     def test_gradle_build(self):
         """
@@ -86,9 +68,8 @@ dependencies {{
         module = 'example-module'
         version = '1.0.0'
         
-        build_success = self.run_gradle_build(module, version)
-        
-        self.assertTrue(build_success, "Gradle build failed")
+        self.run_gradle_build(module, version)
+        # test is successful when it does not fail.
 
 if __name__ == '__main__':
     unittest.main()

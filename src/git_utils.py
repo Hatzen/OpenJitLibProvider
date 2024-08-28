@@ -1,6 +1,17 @@
 import os
 import subprocess
 
+# TODO: Fullfill and pass as argument
+providers = ["https://github.com/", "https://gitlab.com/"]
+
+def get_repo_url(organization, module, provider = "github"):
+    # providers.append(config.getCustomProviders)
+    token = ""
+    # get tokens for repos from config as well
+    if (False):
+        token = "myToken@"
+    return f"https://{token}github.com/{organization}/{module}.git"
+
 def clone_and_checkout(repo_url, version, clone_dir):
     if not os.listdir(clone_dir):
         subprocess.run(["git", "clone", repo_url, clone_dir], check=True)
@@ -8,6 +19,7 @@ def clone_and_checkout(repo_url, version, clone_dir):
         checkout_tag(clone_dir, version)
 
 def checkout_tag(repo_dir, tag):
+    # TODO: Check tag for -SNAPSHOT postfix and use branch instead of tag.
     try:
         run_command(['git', 'checkout', f'tags/{tag}'], cwd=repo_dir)
     except subprocess.CalledProcessError:

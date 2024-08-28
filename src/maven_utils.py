@@ -1,10 +1,11 @@
 import os
 import datetime
 import hashlib
+from consts import LOCAL_CLONE_PATH, LOCAL_REPO_PATH
 
 def generate_maven_metadata(organization, module, version):
     group_path = organization.replace('.', '/')
-    artifact_dir = os.path.join("repo", group_path, module)
+    artifact_dir = os.path.join(LOCAL_REPO_PATH, group_path, module)
     
     metadata_path = os.path.join(artifact_dir, "maven-metadata.xml")
     if not os.path.exists(metadata_path):
@@ -28,7 +29,7 @@ def generate_maven_metadata(organization, module, version):
 
 def generate_pom_file(organization, module, version):
     group_path = organization.replace('.', '/')
-    artifact_dir = os.path.join("repo", group_path, module, version)
+    artifact_dir = os.path.join(LOCAL_REPO_PATH, group_path, module, version)
     pom_file_path = os.path.join(artifact_dir, f"{module}-{version}.pom")
     
     if not os.path.exists(pom_file_path):

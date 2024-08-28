@@ -4,7 +4,7 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
 from flask import Flask, request, send_file, abort
-from git_utils import clone_and_checkout
+from git_utils import clone_and_checkout, get_repo_url
 from build_utils import update_build_files, build_project, find_artifact_file, save_artifact, getArtifactDest
 from maven_utils import generate_maven_metadata, generate_pom_file
 from error_handler import log_method_output
@@ -40,12 +40,13 @@ def getArtifact(organization, module, version, artifact_file):
 
     print(artifact_file)
     if artifact_file and os.path.exists(artifact_file):
-        return send_file(artifact_file)
+        # TODO: Why we need to get a folder up, when git and build is working fine and path exists..
+        return send_file("../" + artifact_file)
 
     abort(404, "Artifact not found")
 
 def handle_artifact_request(organization, module, version):
-    repo_url = f"https://github.com/{organization}/{module}.git"
+    repo_url = get_repo_url(organization, module)
     clone_dir = os.path.join(LOCAL_CLONE_PATH, f"{module}-{version}")
     os.makedirs(clone_dir, exist_ok=True)
     
