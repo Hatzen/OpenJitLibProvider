@@ -9,7 +9,7 @@ ANDROID_SDK_ROOT: "C:/Users/kaiha/AppData/Local/Android/Sdk"
 KNOWN_HOSTS:
     "com.github": "github.com/repos"
 REPOSITORY_TOKENS:
-    my-private-repo: "mySecretToken"
+    ExampleNameProvider: "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"
 
 # Cleanup
 DELETE_ARTIFACTS: -1

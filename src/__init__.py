@@ -4,9 +4,10 @@ from cron_cleaner import startCronCleaner
 # sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
 from config import load_properties
+from consts import LOCAL_CONFIG_FILE
 from app import app
 
-config = load_properties("config.yml")
+config = load_properties(LOCAL_CONFIG_FILE)
 
 os.environ['JAVA_HOME'] = config['JAVA_HOME']
 os.environ['PATH'] = f"{config['JAVA_HOME']}\\bin;" + os.environ['PATH']

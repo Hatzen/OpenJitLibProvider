@@ -79,6 +79,10 @@ def replace_in_file(file_path, old_line, new_line):
         file.write(content)
 
 def build_project(clone_dir):
+    # TODO
+    # maven wrapper exists?
+    # linux or windows 
+
     command =  "assembleRelease" # Maybe leading to problems with LeakCanary
     command =  "assemble"
     subprocess.run(["gradlew.bat", command], cwd=clone_dir, check=True, shell=True)

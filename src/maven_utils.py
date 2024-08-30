@@ -10,6 +10,7 @@ def generate_maven_metadata(organization, module, version):
     metadata_path = os.path.join(artifact_dir, "maven-metadata.xml")
     if not os.path.exists(metadata_path):
         last_updated = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+        # TODO: Need proper versioning for different versions and info of commithash for snapshots. but then its complicated to read it..
         metadata_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <metadata>
     <groupId>{organization}</groupId>

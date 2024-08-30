@@ -1,15 +1,19 @@
 import os
 import subprocess
+from config import load_properties
+from consts import LOCAL_CONFIG_FILE
 
 # TODO: Fullfill and pass as argument
 providers = ["https://github.com/", "https://gitlab.com/"]
 
 def get_repo_url(organization, module, provider = "github"):
+    
+    tokensByModule = load_properties(LOCAL_CONFIG_FILE)["REPOSITORY_TOKENS"]
     # providers.append(config.getCustomProviders)
     token = ""
     # get tokens for repos from config as well
-    if (False):
-        token = "myToken@"
+    if (tokensByModule[module]):
+        token = tokensByModule[module] + "@"
     return f"https://{token}github.com/{organization}/{module}.git"
 
 def clone_and_checkout(repo_url, version, clone_dir):
