@@ -3,74 +3,39 @@ import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
-from flask import Flask, request, send_file, abort
-from git_utils import clone_and_checkout, get_repo_url
-from build_utils import update_build_files, build_project, find_artifact_file, save_artifact, getArtifactDest
-from maven_utils import generate_maven_metadata, generate_pom_file
-from error_handler import log_method_output
-from consts import LOCAL_CLONE_PATH, LOCAL_REPO_PATH
+from flask import Flask, send_from_directory, render_template_string, abort, Response, url_for
+from nexus_service import handleRepositoryCall
+from ui_service import handle_list_files, handle_list_logs, handle_download_file, handle_clear_cache, handle_clear_all
+from config import load_properties
+import shutil
+from consts import LOCAL_CLONE_PATH, LOCAL_REPO_PATH, LOCAL_LOGS_PATH
 
 app = Flask(__name__)
 
 @app.route("/repository/<path:artifact_path>", methods=["GET"])
 def repository(artifact_path: str):
-    if "com/github/" not in artifact_path: 
-        abort(404, "No GitHub URL found")
+    handleRepositoryCall(artifact_path)
 
-    artifact_path = artifact_path.replace("com/github/", "")
-    parts = artifact_path.split('/')
+@app.route('/list')
+def list_files():
+     return handle_list_files()
 
-    if len(parts) < 4 or len(parts) > 4:
-        abort(404 if len(parts) > 4 else 400, "Invalid artifact URL")
+@app.route('/logs')
+def list_logs():
+     return handle_list_logs()
 
-    organization, module, version, file_name = parts[0], parts[1], parts[2], parts[-1]
-    # version = parts[2].replace("-SNAPSHOT", "") # Remove Snapshot for some repos, but it might be needed..
-    artifact_dir = os.path.join(LOCAL_REPO_PATH, organization, module, version)
-    artifact_file = os.path.join(artifact_dir, file_name)
+@app.route('/download/<path:filename>')
+def download_file(filename):
+    return handle_download_file(LOCAL_REPO_PATH, filename)
 
-    response = log_method_output(getArtifact, (organization, module, version, artifact_file), {}, organization, module, version, file_name)
-    if response:
-        return response
-    abort(500, "Could not get or create artifact")
+@app.route('/log/<path:filename>')
+def download_log(filename):
+    return handle_download_file(LOCAL_LOGS_PATH, filename)
+
+@app.route('/clear/cache')
+def clear_cache():
+    return handle_clear_cache()
     
-
-def getArtifact(organization, module, version, artifact_file):
-    if not os.path.exists(artifact_file):
-        artifact_file = handle_artifact_request(organization, module, version)
-
-    print(artifact_file)
-    if artifact_file and os.path.exists(artifact_file):
-        # TODO: Why we need to get a folder up, when git and build is working fine and path exists..
-        return send_file("../" + artifact_file)
-
-    abort(404, "Artifact not found")
-
-def handle_artifact_request(organization, module, version):
-    repo_url = get_repo_url(organization, module)
-    clone_dir = os.path.join(LOCAL_CLONE_PATH, f"{module}-{version}")
-    os.makedirs(clone_dir, exist_ok=True)
-    
-    try:
-        clone_and_checkout(repo_url, version, clone_dir)
-        
-        if os.path.exists(os.path.join(clone_dir, "build")):
-            # print(f"Build already exists, skipping: {clone_dir}")
-            # TODO: Check if pom works..
-            return os.path.join(getArtifactDest(organization, module, version))
-        
-        update_build_files(clone_dir)
-        build_project(clone_dir)
-        
-        jar_file = find_artifact_file(clone_dir)
-        
-        if jar_file:
-            dest_file = save_artifact(jar_file, organization, module, version)
-            generate_maven_metadata(organization, module, version)
-            generate_pom_file(organization, module, version)
-            return dest_file
-        
-        print(f"AAR file not found: {clone_dir}")
-        return None
-    
-    finally:
-        pass  # Optional: Clean up by removing the cloned directory
+@app.route('/clear/all')
+def clear_all():
+    return handle_clear_all()

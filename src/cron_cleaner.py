@@ -53,7 +53,7 @@ def delete_empty_directories(directory, days):
 
 
 def run_cleanup():
-    delete_old_files(DIRECTORY, DAYS)
+    all_files_old(LOCAL_CLONE_PATH, DAYS)
 
 def run_scheduler():
     schedule.every().day.at("00:00").do(run_cleanup)

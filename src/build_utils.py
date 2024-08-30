@@ -84,25 +84,44 @@ def build_project(clone_dir):
     # linux or windows 
 
     command =  "assembleRelease" # Maybe leading to problems with LeakCanary
-    command =  "assemble"
-    subprocess.run(["gradlew.bat", command], cwd=clone_dir, check=True, shell=True)
+    # command ="assemble"
+    subprocess.run(["./gradlew.bat", command], cwd=clone_dir, check=True, shell=True)
     # TODO: Leading to error as we have mocked them to pipe them into a file.
     # , stdin=sys.stdout, stderr=sys.stderr
 
 def find_artifact_file(clone_dir):
+    filepaths = []
     for filename in glob(os.path.join(clone_dir, '**', '*.aar'), recursive=True):
         print(f"Found AAR file: {filename}")
-        return filename
-    return None
+        filepaths.append(filename)
+    for filename in glob(os.path.join(clone_dir, '**', '*.jar'), recursive=True):
+        print(f"Found jar file: {filename}")
+        filepaths.append(filename)
+    for filename in glob(os.path.join(clone_dir, '**', '*.war'), recursive=True):
+        print(f"Found war file: {filename}")
+        filepaths.append(filename)
+    return filepaths
 
-def save_artifact(jar_file, organization, module, version):
+def save_artifact(artifact_files, organization, module, version):
     dest_dir = getArtifactDest(organization, module, version)
-    dest_file = os.path.join(dest_dir, f"{module}-{version}.aar")
     os.makedirs(dest_dir, exist_ok=True)
-    os.rename(jar_file, dest_file)
+    for artifact in artifact_files:
+        ending = getEnding(artifact)
+        dest_file = os.path.join(dest_dir, f"{module}-{version}.{ending}")
+        os.rename(artifact, dest_file)
     return dest_file
+
+def getPackagings(artifact_files):
+    packagings = []
+    for artifact in artifact_files:
+        packageing = getEnding(artifact).replace("\.", "")
+        packagings.append(packageing)
+    return packageing
 
 def getArtifactDest(organization, module, version):
     group_path = organization.replace('.', '/')
     dest_dir = os.path.join(LOCAL_REPO_PATH, group_path, module, version)
     return dest_dir
+
+def getEnding(artifact):
+    return os.path.splitext(artifact)[-1]

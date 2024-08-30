@@ -13,9 +13,11 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.Hatzen:ExampleNameProvider:1.0-SNAPSHOT'
-
+    implementation 'com.github.Hatzen:ExampleNameProvider:master-SNAPSHOT'
+    
     /*
+    implementation 'com.github.Hatzen:ExampleNameProvider:master'
+
     implementation 'com.github.Hatzen:ProfilePictureGenerator:0.7.2b'
     implementation 'com.github.TutorialsAndroid:FilePicker:v8.0.19'
     // Failed one time probably duration.
