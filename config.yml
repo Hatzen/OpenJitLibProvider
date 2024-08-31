@@ -11,6 +11,7 @@ ANDROID_SDK_ROOT: "C:/Users/kaiha/AppData/Local/Android/Sdk"
 
 # repos
 KNOWN_HOSTS:
+    # package prefix : url prefix
     "com.github": "github.com"
     "com.azure": "azure.com"
     "com.gitee": "gitee.com"

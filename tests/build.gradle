@@ -13,10 +13,9 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.Hatzen:ExampleNameProvider:master-SNAPSHOT'
+    implementation 'com.github.Hatzen:ExampleNameProvider:main-SNAPSHOT'
     
-    /*
-    implementation 'com.github.Hatzen:ExampleNameProvider:master'
+    // implementation 'com.github.Hatzen:ExampleNameProvider:master'
 
     implementation 'com.github.Hatzen:ProfilePictureGenerator:0.7.2b'
     implementation 'com.github.TutorialsAndroid:FilePicker:v8.0.19'
@@ -57,6 +56,7 @@ dependencies {
     implementation "com.github.dm77:barcodescanner:1.9.13"
 
     implementation "com.github.google:flexbox-layout:2.0.1"
-    */
+    
+    /**/
     
 }

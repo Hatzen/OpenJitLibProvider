@@ -84,10 +84,30 @@ def build_project(clone_dir):
     # linux or windows 
 
     command =  "assembleRelease" # Maybe leading to problems with LeakCanary
-    # command ="assemble"
-    subprocess.run(["./gradlew.bat", command], cwd=clone_dir, check=True, shell=True)
+    command ="assemble"
+    
+    print("build project in")
+    print(os.getcwd())
+    print(clone_dir)
+    # process = subprocess.run(["./gradlew.bat", command], cwd=clone_dir,stdout=subprocess.PIPE,stderr=subprocess.PIPE, check=True, shell=True)
+    
+    gradlew = os.path.join(os.getcwd(), clone_dir, "gradlew.bat")
+    process = subprocess.run([gradlew, command], cwd=os.path.join(os.getcwd(), clone_dir),stdout=subprocess.PIPE,stderr=subprocess.PIPE, check=True, shell=True)
+    
+
+    # process = subprocess.run(["./gradlew.bat", command], cwd=clone_dir, capture_output=True)    
+    # process = subprocess.run(["gradlew.bat", command], cwd=clone_dir, capture_output=True)
+
+
     # TODO: Leading to error as we have mocked them to pipe them into a file.
     # , stdin=sys.stdout, stderr=sys.stderr
+    
+    # Needed when sys.stdout is catched.
+    stdout, stderr = process.communicate()
+    stdout.seek(0)
+    stderr.seek(0)
+    sys.stdout.write(stdout.decode())
+    sys.stderr.write(stderr.decode())
 
 def find_artifact_file(clone_dir):
     filepaths = []
