@@ -9,9 +9,15 @@ from app import app
 
 config = load_properties(LOCAL_CONFIG_FILE)
 
-stdJava = config['JAVA_HOME']['1.8']
+stdJava = None
+try:
+    stdJava = config['JAVA_HOME']['1.8']
+except:
+    print("No java 1.8 version found, leading to errors building old gradlewrapper")
 if not stdJava:
-    stdJava = config['JAVA_HOME'][0]
+    stdJava = list(config['JAVA_HOME'].values())[0]
+
+
 os.environ['JAVA_HOME'] = stdJava
 os.environ['PATH'] = f"{config['JAVA_HOME']}\\bin;" + os.environ['PATH']
 os.environ['ANDROID_SDK_ROOT'] = config['ANDROID_SDK_ROOT']

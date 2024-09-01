@@ -3,6 +3,8 @@ import sys
 import subprocess
 from glob import glob
 from consts import LOCAL_CLONE_PATH, LOCAL_REPO_PATH
+import xml.etree.ElementTree as ET
+import re
 
 def update_build_files(clone_dir):
     replace_jitpack(clone_dir)
@@ -87,14 +89,23 @@ def build_project(clone_dir):
     command ="assemble"
     
     print("build project in")
-    print(os.getcwd())
-    print(clone_dir)
     # process = subprocess.run(["./gradlew.bat", command], cwd=clone_dir,stdout=subprocess.PIPE,stderr=subprocess.PIPE, check=True, shell=True)
     
-    gradlew = os.path.join(os.getcwd(), clone_dir, "gradlew.bat")
-    process = subprocess.run([gradlew, command], cwd=os.path.join(os.getcwd(), clone_dir),stdout=subprocess.PIPE,stderr=subprocess.PIPE, check=True, shell=True)
     
-
+    replaced = clone_dir.replace("/",  "\\")
+    
+    printJavaVersion(os.path.join(os.getcwd(), replaced))
+    
+    gradlew = os.path.join(os.getcwd(), replaced, "gradlew.bat")
+    gradlew = gradlew.replace("/",  "\\")
+    
+    print(gradlew)
+    # process = subprocess.run([gradlew, command], cwd=os.path.join(os.getcwd(), clone_dir),stdout=subprocess.PIPE,stderr=subprocess.PIPE, check=True, shell=True)
+    process = subprocess.run([gradlew, command], cwd=clone_dir, check=True)
+    
+    # process = subprocess.run([gradlew, command], cwd=os.path.join(os.getcwd(), clone_dir),stdout=subprocess.PIPE,stderr=subprocess.PIPE, check=True, shell=True)
+    # process = subprocess.run(["gradlew.bat", command], cwd=clone_dir, check=True)
+    
     # process = subprocess.run(["./gradlew.bat", command], cwd=clone_dir, capture_output=True)    
     # process = subprocess.run(["gradlew.bat", command], cwd=clone_dir, capture_output=True)
 
@@ -103,11 +114,11 @@ def build_project(clone_dir):
     # , stdin=sys.stdout, stderr=sys.stderr
     
     # Needed when sys.stdout is catched.
-    stdout, stderr = process.communicate()
-    stdout.seek(0)
-    stderr.seek(0)
-    sys.stdout.write(stdout.decode())
-    sys.stderr.write(stderr.decode())
+    # tdout, stderr = process.communicate()
+    # tdout.seek(0)
+    # tderr.seek(0)
+    # ys.stdout.write(stdout.decode())
+    # ys.stderr.write(stderr.decode())
 
 def find_artifact_file(clone_dir):
     filepaths = []
@@ -145,3 +156,162 @@ def getArtifactDest(organization, module, version):
 
 def getEnding(artifact):
     return os.path.splitext(artifact)[-1]
+
+
+
+
+
+
+
+
+
+
+# Vollständige Mappings für Gradle- und Maven-Versionen
+GRADLE_JAVA_VERSIONS = {
+    '8.0': ['17', '21'],
+    '7.9': ['11', '17', '21'],
+    '7.8': ['11', '17', '21'],
+    '7.7': ['11', '17', '21'],
+    '7.6': ['11', '17', '21'],
+    '7.5': ['11', '17', '21'],
+    '7.4': ['11', '17', '21'],
+    '7.3': ['11', '17', '21'],
+    '7.2': ['11', '17'],
+    '7.1': ['11', '17'],
+    '7.0': ['11', '17'],
+    '6.9': ['8', '11'],
+    '6.8': ['8', '11'],
+    '6.7': ['8', '11'],
+    '6.6': ['8', '11'],
+    '6.5': ['8', '11'],
+    '6.4': ['8', '11'],
+    '6.3': ['8', '11'],
+    '6.2': ['8', '11'],
+    '6.1': ['8', '11'],
+    '6.0': ['8', '11'],
+    '5.6': ['8', '11'],
+    '5.5': ['8', '11'],
+    '5.4': ['8', '11'],
+    '5.3': ['8', '11'],
+    '5.2': ['8', '11'],
+    '5.1': ['8', '11'],
+    '5.0': ['8', '11'],
+    '4.10': ['7', '8'],
+    '4.9': ['7', '8'],
+    '4.8': ['7', '8'],
+    '4.7': ['7', '8'],
+    '4.6': ['7', '8'],
+    '4.5': ['7', '8'],
+    '4.4': ['7', '8'],
+    '4.3': ['7', '8'],
+    '4.2': ['7', '8'],
+    '4.1': ['7', '8'],
+    '4.0': ['7', '8']
+}
+
+MAVEN_JAVA_VERSIONS = {
+    '3.9.0': ['8', '11', '17', '21'],
+    '3.8.6': ['8', '11', '17', '21'],
+    '3.8.5': ['8', '11', '17', '21'],
+    '3.8.4': ['8', '11', '17', '21'],
+    '3.8.3': ['8', '11', '17', '21'],
+    '3.8.2': ['8', '11', '17', '21'],
+    '3.8.1': ['8', '11', '17', '21'],
+    '3.8.0': ['8', '11', '17', '21'],
+    '3.7.0': ['8', '11', '17'],
+    '3.6.3': ['8', '11'],
+    '3.6.2': ['8', '11'],
+    '3.6.1': ['8', '11'],
+    '3.6.0': ['8', '11'],
+    '3.5.4': ['7', '9'],
+    '3.5.3': ['7', '9'],
+    '3.5.2': ['7', '9'],
+    '3.5.1': ['7', '9'],
+    '3.5.0': ['7', '9'],
+    '3.4.0': ['7', '8'],
+    '3.3.9': ['7', '8'],
+    '3.3.8': ['7', '8'],
+    '3.3.7': ['7', '8'],
+    '3.3.6': ['7', '8'],
+    '3.3.5': ['7', '8'],
+    '3.3.4': ['7', '8'],
+    '3.3.3': ['7', '8'],
+    '3.3.2': ['7', '8'],
+    '3.3.1': ['7', '8'],
+    '3.3.0': ['7', '8'],
+    '3.2.5': ['7'],
+    '3.2.4': ['7'],
+    '3.2.3': ['7'],
+    '3.2.2': ['7'],
+    '3.2.1': ['7'],
+    '3.2.0': ['7']
+}
+
+# Fallback-Werte für die neueste bekannte Version
+LATEST_GRADLE_JAVA_VERSIONS = ['17', '21']
+LATEST_MAVEN_JAVA_VERSIONS = ['8', '11', '17', '21']
+
+def detect_project_type(folder):
+    """Detect if the folder is a Maven or Gradle project based on the presence of key files."""
+    if os.path.exists(os.path.join(folder, 'pom.xml')):
+        return 'maven'
+    elif os.path.exists(os.path.join(folder, 'build.gradle')) or os.path.exists(os.path.join(folder, 'settings.gradle')):
+        return 'gradle'
+    else:
+        return 'unknown'
+
+def extract_gradle_version(folder):
+    """Extract the Gradle version from gradle-wrapper.properties."""
+    wrapper_properties_file = os.path.join(folder, 'gradle', 'wrapper', 'gradle-wrapper.properties')
+    if os.path.exists(wrapper_properties_file):
+        with open(wrapper_properties_file, 'r') as file:
+            content = file.read()
+        match = re.search(r'distributionUrl=.*gradle-(\d+\.\d+)\.zip', content)
+        if match:
+            return match.group(1)
+    return None
+
+def extract_maven_version(folder):
+    """Extract the Maven version from maven-wrapper.properties."""
+    wrapper_properties_file = os.path.join(folder, 'mvn', 'wrapper', 'maven-wrapper.properties')
+    if os.path.exists(wrapper_properties_file):
+        with open(wrapper_properties_file, 'r') as file:
+            content = file.read()
+        match = re.search(r'distributionUrl=.*apache-maven-(\d+\.\d+\.\d+)-bin\.zip', content)
+        if match:
+            return match.group(1)
+    return None
+
+def get_java_versions_from_gradle(gradle_version):
+    """Get the possible Java versions supported by the Gradle version with fallback to latest version."""
+    versions = GRADLE_JAVA_VERSIONS.get(gradle_version, LATEST_GRADLE_JAVA_VERSIONS)
+    return sorted(set(versions), key=lambda v: [int(i) for i in v.split('.')])
+
+def get_java_versions_from_maven(maven_version):
+    """Get the possible Java versions supported by the Maven version with fallback to latest version."""
+    versions = MAVEN_JAVA_VERSIONS.get(maven_version, LATEST_MAVEN_JAVA_VERSIONS)
+    return sorted(set(versions), key=lambda v: [int(i) for i in v.split('.')])
+
+def main(folder):
+    project_type = detect_project_type(folder)
+    
+    if project_type == 'maven':
+        maven_version = extract_maven_version(folder)
+        if maven_version:
+            versions = get_java_versions_from_maven(maven_version)
+            print(f"Maven version detected: {maven_version}")
+            print(f"Possible Java versions: {versions}")
+        else:
+            print("Maven - No Maven wrapper version found.")
+    
+    elif project_type == 'gradle':
+        gradle_version = extract_gradle_version(folder)
+        if gradle_version:
+            versions = get_java_versions_from_gradle(gradle_version)
+            print(f"Gradle version detected: {gradle_version}")
+            print(f"Possible Java versions: {versions}")
+        else:
+            print("Gradle - No Gradle wrapper version found.")
+    
+    else:
+        print("Project type could not be determined. The folder does not contain Maven or Gradle configuration files.")

@@ -49,39 +49,22 @@ def log_method_output(method, args, kwargs, organization, module, version, file_
     
     log_file_path = os.path.join(log_dir, f"{file_name}-{timestamp}.txt")
     
-    # TODO: Check if this leads to problem with multi threading, which would be expected.
+
+    # TODO: Check if this leads to problem with multi threading, which would be expected. Temporarly resolved by synchronized call.
+   
+    # Redirect stdout and stderr to StringIO objects
     # Backup current stdout and stderr
     original_stdout = sys.stdout
     original_stderr = sys.stderr
-    
-    # Redirect stdout and stderr to StringIO objects
-    sys.stdout = StringIO()
-    sys.stderr = StringIO()
-    
-    try:
-        output = method(*args, **kwargs)
-        # Write output to log file
+    #sys.stdout = StringIO()
+    #sys.stderr = StringIO()
 
-        # Restore original stdout and stderr
-        sys.stdout = original_stdout
-        sys.stderr = original_stderr
-        print("Sucess for " + file_name)
-        '''
-       
-        with open(log_file_path, 'w') as log_file:
-            log_file.write("Standard Output:\n")
-            log_file.write(sys.stdout.getvalue())
-            log_file.write("\nStandard Error:\n")
-            log_file.write(sys.stderr.getvalue())
-            log_file.write("\nResult:\n")
-            log_file.write(str(output))
-       
-       '''
-        
-        # TODO: Should we remove the long build logs?
-        # print(sys.stdout.getvalue())
-        print("Sucess for " + file_name)
-        return output
+
+    result = None
+    resultText = ""
+    try:
+        result = method(*args, **kwargs)
+        resultText = "Sucess for " + file_name
             
     except Exception as e:
         # Write error details to log file
@@ -100,10 +83,14 @@ def log_method_output(method, args, kwargs, organization, module, version, file_
             log_file.write("\StdErr:\n")
             log_file.write(sys.stderr.getvalue())
 
+        resultText = "Error for " + file_name + " see log " + log_file_path
+    finally:
         # Restore original stdout and stderr
-        sys.stdout = original_stdout
-        sys.stderr = original_stderr
+        #sys.stdout = original_stdout
+        #sys.stderr = original_stderr
         
+        print(resultText)
+        return result
             
-        print("Error for " + file_name + " see log " + log_file_path)
+        
     
