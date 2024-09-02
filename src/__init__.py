@@ -19,7 +19,7 @@ if not stdJava:
 
 
 os.environ['JAVA_HOME'] = stdJava
-os.environ['PATH'] = f"{config['JAVA_HOME']}\\bin;" + os.environ['PATH']
+os.environ['PATH'] = f"{stdJava}\\bin;" + os.environ['PATH']
 os.environ['ANDROID_SDK_ROOT'] = config['ANDROID_SDK_ROOT']
 # To support gradle wrapper v3
 os.environ['ANDROID_HOME'] = config['ANDROID_SDK_ROOT']

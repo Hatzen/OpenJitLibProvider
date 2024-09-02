@@ -3,7 +3,8 @@ import sys
 
 from flask import send_file, abort
 from git_utils import clone_and_checkout, get_repo_url
-from build_utils import update_build_files, build_project, find_artifact_file, save_artifact, getArtifactDest, getPackagings
+from build_utils.build_wrapper import build
+from build_utils.build_utils import *
 from maven_utils import generate_maven_metadata, generate_pom_file
 from error_handler import log_method_output
 from consts import LOCAL_CLONE_PATH, LOCAL_REPO_PATH, LOCAL_CONFIG_FILE
@@ -69,15 +70,7 @@ def handle_artifact_request(targetHostUrl, organization, module, version):
             print(f"Artifact already exists, using {artifactFolder}")
             return os.path.join(artifactFolder)
         
-        
-        print("update build files..")
-        update_build_files(clone_dir)
-
-        if os.path.exists(os.path.join(clone_dir, "build")):
-            pass # remove build dir.
-
-        print("build files..")
-        build_project(clone_dir)
+        build(clone_dir)
         
         artifact_files = find_artifact_file(clone_dir)
         print("list artifact files")
