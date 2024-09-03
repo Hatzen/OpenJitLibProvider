@@ -25,8 +25,8 @@ def handleRepositoryCall(artifact_path: str):
         targetHostUrl = hostUrl
         break
     
-    print(parts)
-    print(targetHostUrl)
+    # print(parts)
+    print(artifact_path + " pulling from " + targetHostUrl)
     
     if not parts: 
         abort(404, "No matching host found. Maybe add one to KNOWN_HOSTS within config.")
@@ -48,8 +48,7 @@ def getArtifact(targetHostUrl, organization, module, version, artifact_file):
     if not os.path.exists(artifact_file):
         artifact_file = handle_artifact_request(targetHostUrl, organization, module, version)
 
-    print("artifact_file")
-    print(artifact_file)
+    print("artifact_file: " + artifact_file) # TODO: repo/Hatzen\ExampleNameProvider\main-SNAPSHOT missing jar files for some reaason..
     if artifact_file and os.path.exists(artifact_file):
         # TODO: Why we need to get a folder up, when git and build is working fine and path exists..
         return send_file("../" + artifact_file)
@@ -68,7 +67,8 @@ def handle_artifact_request(targetHostUrl, organization, module, version):
         artifactFolder = getArtifactDest(organization, module, version)
         if os.path.exists(artifactFolder):
             print(f"Artifact already exists, using {artifactFolder}")
-            return os.path.join(artifactFolder)
+            artifact_files = find_artifact_file(clone_dir)
+            return os.path.join(artifact_files)
         
         build(clone_dir)
         
