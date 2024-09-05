@@ -5,7 +5,7 @@ from glob import glob
 from consts import LOCAL_CLONE_PATH, LOCAL_REPO_PATH
 import xml.etree.ElementTree as ET
 import re
-from build_utils import *
+from build_utils.build_utils import *
 
 
 class GradleUtils():
@@ -68,7 +68,7 @@ class GradleUtils():
         replace_line_with_partial_match(build_gradle, old_line, new_line)
         replace_line_with_partial_match(settings_gradle, old_line, new_line)
         
-    def build_project(clone_dir):
+    def build_project(self, clone_dir):
         command =  "assembleRelease" # Maybe leading to problems with LeakCanary
         command = "assemble"
         
@@ -153,7 +153,7 @@ class GradleUtils():
     # Fallback-Werte für die neueste bekannte Version
     LATEST_GRADLE_JAVA_VERSIONS = ['17', '21']
 
-    def detect_project_type(folder):
+    def detect_project_type(self, folder):
         """Detect if the folder is a Maven or Gradle project based on the presence of key files."""
         if os.path.exists(os.path.join(folder, 'pom.xml')):
             return 'maven'
@@ -162,7 +162,7 @@ class GradleUtils():
         else:
             return 'unknown'
 
-    def extract_gradle_version(folder):
+    def extract_gradle_version(self, folder):
         """Extract the Gradle version from gradle-wrapper.properties."""
         wrapper_properties_file = os.path.join(folder, 'gradle', 'wrapper', 'gradle-wrapper.properties')
         if os.path.exists(wrapper_properties_file):
@@ -173,7 +173,7 @@ class GradleUtils():
                 return match.group(1)
         return None
 
-    def extract_maven_version(folder):
+    def extract_maven_version(self, folder):
         """Extract the Maven version from maven-wrapper.properties."""
         wrapper_properties_file = os.path.join(folder, 'mvn', 'wrapper', 'maven-wrapper.properties')
         if os.path.exists(wrapper_properties_file):

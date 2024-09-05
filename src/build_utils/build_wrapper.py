@@ -11,7 +11,7 @@ from build_utils.gradle_utils import GradleUtils
 from build_utils.maven_utils import MavenUtils
 from config import load_properties
 from consts import LOCAL_CONFIG_FILE
-from build_utils import *
+from build_utils.build_utils import *
 
 def build(clone_dir):
     project_type = detect_project_type(clone_dir)
@@ -23,9 +23,16 @@ def build(clone_dir):
     else:
         raise("Project type could not be determined. The folder does not contain Maven or Gradle configuration files.")
 
-    javaVersion = build_tool.determine_java_version(clone_dir)
+    javaVersions = build_tool.determine_java_version(clone_dir)
     config = load_properties(LOCAL_CONFIG_FILE)
-    stdJava = config['JAVA_HOME']['1.' + javaVersion]
+    stdJava = ""
+    for javaVersion in javaVersions:
+        stdJava = config['JAVA_HOME'].get('1.' + javaVersion)
+        if stdJava:
+            continue
+    if not stdJava:
+        raise("Java version not defined " + javaVersions)
+
     os.environ['JAVA_HOME'] = stdJava
     os.environ['PATH'] = f"{stdJava}\\bin;" + os.environ['PATH']
 

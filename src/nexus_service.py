@@ -2,7 +2,7 @@ import os
 import sys
 
 from flask import send_file, abort
-from git_utils import clone_and_checkout, get_repo_url
+from git_utils import *
 from build_utils.build_wrapper import build
 from build_utils.build_utils import *
 from maven_utils import generate_maven_metadata, generate_pom_file
@@ -45,10 +45,12 @@ def handleRepositoryCall(artifact_path: str):
     
 
 def getArtifact(targetHostUrl, organization, module, version, artifact_file):
-    if not os.path.exists(artifact_file):
-        artifact_file = handle_artifact_request(targetHostUrl, organization, module, version)
+    print("getArtifact: " + artifact_file)
+    # TODO: do we need this to handle maven files properly? if not os.path.exists(artifact_file):
+    artifact_file = handle_artifact_request(targetHostUrl, organization, module, version)
 
-    print("artifact_file: " + artifact_file) # TODO: repo/Hatzen\ExampleNameProvider\main-SNAPSHOT missing jar files for some reaason..
+    # Remove? TODO: repo/Hatzen\ExampleNameProvider\main-SNAPSHOT missing jar files for some reaason..
+    # print("artifact_file: " + artifact_file) 
     if artifact_file and os.path.exists(artifact_file):
         # TODO: Why we need to get a folder up, when git and build is working fine and path exists..
         return send_file("../" + artifact_file)
@@ -61,17 +63,23 @@ def handle_artifact_request(targetHostUrl, organization, module, version):
     os.makedirs(clone_dir, exist_ok=True)
     
     try:
+        print("clone and checkout")
         clone_and_checkout(repo_url, version, clone_dir)
-        
-        # TODO: build snapshots so build again
+
+        print("check hash")
         artifactFolder = getArtifactDest(organization, module, version)
-        if os.path.exists(artifactFolder):
-            print(f"Artifact already exists, using {artifactFolder}")
-            artifact_files = find_artifact_file(clone_dir)
-            return os.path.join(artifact_files)
+        needsToBeBuild = checkCommitHashAndUpdate(clone_dir, artifactFolder)
+
+        # if not needsToBeBuild and os.path.exists(artifactFolder):
+        #     print(f"Artifact already exists, using {artifactFolder}")
+        #     artifact_files = find_artifact_file(clone_dir)
+        #     return os.path.join(artifact_files)
+        
+        print("Artifact needs fresh build")
         
         build(clone_dir)
         
+        print("Find artifacts")
         artifact_files = find_artifact_file(clone_dir)
         print("list artifact files")
         print(artifact_files)

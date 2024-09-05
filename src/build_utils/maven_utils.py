@@ -5,7 +5,7 @@ from glob import glob
 from consts import LOCAL_CLONE_PATH, LOCAL_REPO_PATH
 import xml.etree.ElementTree as ET
 import re
-from build_utils import *
+from build_utils.build_utils import *
 
 
 class MavenUtils():
