@@ -12,6 +12,16 @@ This project provides a custom Maven artifact repository using Flask, which clon
 - [Troubleshooting](#troubleshooting)
 - [License](#license)
 
+# When to use
+
+Usually it is recommended to use a real maven nexus to host your artifacts. Some use public hosting some may prefer to have an onpremise nexus. 
+Especially when it comes to open source libraries it is up to the repository owner if he is serving his artifacts in a public repo like maven central, google or in the past jcenter.
+Some may not have published and abondomed there working project so it would be unethical to copy or fork the repo only to provide this artifacts.
+That where JitPack comes in handy at least for side projects which have a small budget on hosting or providing libraries. It compiles all open source code "just in time" for libraries and snapshots very fine the last few years.
+
+On the other hand jitpack is neither open source (except its docs) nor is completly clear if it financially stable enough to provide artifacts for the next few years. Espacially the number of open issues and the browndown of jcenter made it not to reliable. 
+Therefore this repository shall provide a free and open source way to host artifacts locally and on premise as well it should integrate some migration to support old jcenter repos out of the box. Espacially by being open source it can be extended with cool functionality which is required by several providers.
+
 ## Features
 - Clones GitHub repositories for specified modules and versions.
 - Builds Android libraries (AAR files).
@@ -19,11 +29,13 @@ This project provides a custom Maven artifact repository using Flask, which clon
 - Serves built artifacts and metadata through a Flask-based web server.
 
 ## Prerequisites
+- Docker
+OR
 - Python 3.x
+- pip
 - Git
 - Java (JDK 8 or 11 recommended)
 - Android SDK
-- Flask
 
 ## Installation
 
@@ -43,24 +55,13 @@ Ensure you have the correct paths for `JAVA_HOME` and `ANDROID_SDK_ROOT` in your
 
 ## Configuration
 
-### Create the `properties.config` File:
-In the project root directory, create a `properties.config` file with the following structure:
-
-```ini
-[ENVIRONMENT]
-JAVA_HOME=C:/path/to/java/home
-ANDROID_SDK_ROOT=C:/path/to/android/sdk
-```
-Replace the paths with your actual installation paths.
-
-### Modify Configuration (Optional):
-If needed, you can modify the `config.py` file to handle additional configuration settings.
+In the project root directory modify `config.yml` file so it will find the build tools required to build your libraries
 
 ## Usage
 
 ### Run the Flask Server:
 ```bash
-python app.py
+python src/__init__.py
 ```
 
 ### Access the Repository:
@@ -78,27 +79,7 @@ http://localhost:5000/repository/com/github/{organization}/{module}/{version}/{a
 http://localhost:5000/repository/com/github/skydoves/ElasticViews/1.0.6/ElasticViews-1.0.6.aar
 ```
 
-## Project Structure
-```plaintext
-custom-maven-repo/
-│
-├── app.py                     # Main Flask application
-├── build_tools.py             # Functions for building projects
-├── git_utils.py               # Git-related functions for cloning and checkout
-├── maven_metadata.py          # Functions for generating Maven metadata
-├── config.py                  # Configuration loader
-├── properties.config          # Configuration file for environment variables
-├── requirements.txt           # Python dependencies
-└── README.md                  # Project documentation
-```
-
 ## Troubleshooting
-
-### Java Version Error:
-If you encounter issues related to the Java version, ensure that `JAVA_HOME` is correctly set in `properties.config`.
-
-### Android SDK Not Found:
-Ensure that `ANDROID_SDK_ROOT` is correctly set and that the SDK path contains necessary build tools.
 
 ### Artifact Not Found:
 If an artifact is not found, verify that the GitHub repository exists and that the requested version tag is available.

@@ -46,16 +46,16 @@ def handleRepositoryCall(artifact_path: str):
 
 def getArtifact(targetHostUrl, organization, module, version, artifact_file):
     print("getArtifact: " + artifact_file)
-    # TODO: do we need this to handle maven files properly? if not os.path.exists(artifact_file):
+    # TODO: do we need this to handle maven files properly? 
+    # if not os.path.exists(artifact_file):
     artifact_file = handle_artifact_request(targetHostUrl, organization, module, version)
 
     # Remove? TODO: repo/Hatzen\ExampleNameProvider\main-SNAPSHOT missing jar files for some reaason..
-    # print("artifact_file: " + artifact_file) 
     if artifact_file and os.path.exists(artifact_file):
         # TODO: Why we need to get a folder up, when git and build is working fine and path exists..
         return send_file("../" + artifact_file)
-
-    abort(404, "Artifact not found")
+    else:
+        abort(404, "Artifact not found: " + str(artifact_file))
 
 def handle_artifact_request(targetHostUrl, organization, module, version):
     repo_url = get_repo_url(targetHostUrl, organization, module)
@@ -70,10 +70,11 @@ def handle_artifact_request(targetHostUrl, organization, module, version):
         artifactFolder = getArtifactDest(organization, module, version)
         needsToBeBuild = checkCommitHashAndUpdate(clone_dir, artifactFolder)
 
-        # if not needsToBeBuild and os.path.exists(artifactFolder):
-        #     print(f"Artifact already exists, using {artifactFolder}")
-        #     artifact_files = find_artifact_file(clone_dir)
-        #     return os.path.join(artifact_files)
+        generatedFileExists = os.path.exists(os.path.join(artifactFolder, "*.sha1"))
+        if not needsToBeBuild and generatedFileExists:
+             print(f"Artifact already exists, using {artifactFolder}")
+             artifact_files = find_artifact_file(clone_dir)
+             return os.path.join(artifact_files)
         
         print("Artifact needs fresh build")
         
@@ -91,7 +92,7 @@ def handle_artifact_request(targetHostUrl, organization, module, version):
             packagings = getPackagings(artifact_files)
             print("packagings")
             print(packagings)
-            generate_maven_metadata(organization, module, version, packagings)
+            generate_maven_metadata(organization, module, version)
             generate_pom_file(organization, module, version, packagings)
             return dest_file
         

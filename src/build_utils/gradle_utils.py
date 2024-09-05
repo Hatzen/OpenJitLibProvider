@@ -69,7 +69,7 @@ class GradleUtils():
         replace_line_with_partial_match(settings_gradle, old_line, new_line)
         
     def build_project(self, clone_dir):
-        command =  "assembleRelease" # Maybe leading to problems with LeakCanary
+        command =  "clean assembleRelease" # Maybe leading to problems with LeakCanary
         command = "assemble"
         
         print("build project in")
@@ -78,7 +78,7 @@ class GradleUtils():
         
         replaced = clone_dir.replace("/",  "\\")
         
-        printJavaVersion(os.path.join(os.getcwd(), replaced))
+        # printJavaVersion(os.path.join(os.getcwd(), replaced))
         
         gradlew = os.path.join(os.getcwd(), replaced, "gradlew.bat")
         gradlew = gradlew.replace("/",  "\\")
@@ -107,7 +107,7 @@ class GradleUtils():
 
     ALL_JAVA_VERSION_DESC = ['21', '17','11','8' ]
 
-    # Vollständige Mappings für Gradle- und Maven-Versionen
+    # https://docs.gradle.org/current/userguide/compatibility.html#java_runtime
     GRADLE_JAVA_VERSIONS = {
         '8.0': ['17', '21'],
         '7.9': ['11', '17', '21'],
@@ -168,9 +168,10 @@ class GradleUtils():
         if os.path.exists(wrapper_properties_file):
             with open(wrapper_properties_file, 'r') as file:
                 content = file.read()
-            match = re.search(r'distributionUrl=.*gradle-(\d+\.\d+)\.zip', content)
+            match = re.search(r'distributionUrl=https://services.gradle.org/distributions/gradle-(\d+\.\d+)\.zip', content)
             if match:
                 return match.group(1)
+        print("gradle properties not found " + wrapper_properties_file)
         return None
 
     def extract_maven_version(self, folder):

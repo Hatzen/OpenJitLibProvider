@@ -17,8 +17,10 @@ def build(clone_dir):
     project_type = detect_project_type(clone_dir)
     build_tool = MavenUtils()
     if project_type == 'gradle':
+        print("detected gradle")
         build_tool = GradleUtils()
     elif project_type == 'maven':
+        print("detected maven")
         build_tool = MavenUtils()
     else:
         raise("Project type could not be determined. The folder does not contain Maven or Gradle configuration files.")
@@ -27,21 +29,25 @@ def build(clone_dir):
     config = load_properties(LOCAL_CONFIG_FILE)
     stdJava = ""
     for javaVersion in javaVersions:
-        stdJava = config['JAVA_HOME'].get('1.' + javaVersion)
+        fullJavaVersion = '1.' + javaVersion
+        stdJava = config['JAVA_HOME'].get(fullJavaVersion)
+        print("possible java version" + fullJavaVersion + " " + str(stdJava))
         if stdJava:
-            continue
+            break
     if not stdJava:
         raise("Java version not defined " + javaVersions)
 
     os.environ['JAVA_HOME'] = stdJava
     os.environ['PATH'] = f"{stdJava}\\bin;" + os.environ['PATH']
+    print("using java version " + stdJava + " of possible " + str(javaVersions))
 
     print("update build files..")
     build_tool.update_build_files(clone_dir)
     
-    if os.path.exists(os.path.join(clone_dir, "build")):
-        print("build files exist not building again")
-        return # check commit hash and remove build dir.
+    # TODO: Remove. checked on higher level
+    # if os.path.exists(os.path.join(clone_dir, "build")):
+    #    print("build files exist not building again")
+    #    return # check commit hash and remove build dir.
 
     print("build files..")
     build_tool.build_project(clone_dir)

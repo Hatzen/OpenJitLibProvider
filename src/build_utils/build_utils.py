@@ -37,7 +37,10 @@ def save_artifact(artifact_files, organization, module, version):
     os.makedirs(dest_dir, exist_ok=True)
     for artifact in artifact_files:
         ending = getEnding(artifact)
-        dest_file = os.path.join(dest_dir, f"{module}-{version}.{ending}")
+        dest_file = os.path.join(dest_dir, f"{module}-{version}{ending}")
+        # print(artifact + " " + dest_file)
+        if os.path.exists(dest_file):
+            os.remove(dest_file)
         os.rename(artifact, dest_file)
     return dest_file
 

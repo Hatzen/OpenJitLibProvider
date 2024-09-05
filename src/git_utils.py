@@ -6,11 +6,12 @@ from consts import LOCAL_CONFIG_FILE
 config = load_properties(LOCAL_CONFIG_FILE)
 
 def get_repo_url(targetHostUrl, organization, module):
-    tokensByModule = config["REPOSITORY_TOKENS"]
+    tokensByModule = config.get("REPOSITORY_TOKENS")
     token = ""
     # get tokens for repos from config as well
-    if (tokensByModule[module]):
-        token = tokensByModule[module] + "@"
+    tokenForModule = tokensByModule.get(module)
+    if (tokenForModule):
+        token = tokenForModule + "@"
     return f"https://{token}{targetHostUrl}/{organization}/{module}.git"
 
 def clone_and_checkout(repo_url, version, clone_dir):
