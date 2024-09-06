@@ -70,7 +70,10 @@ class GradleUtils():
         
     def build_project(self, clone_dir):
         command =  "clean assembleRelease" # Maybe leading to problems with LeakCanary
-        command = "assemble"
+        command = "assemble" # Problems with sign https://stackoverflow.com/questions/67631927/error-building-aab-flutter-android-integrity-check-failed-java-security-n
+        command = "assemble -x signRelease" # gibts nicht
+        command = "assembleDebug"
+
         
         print("build project in")
         # process = subprocess.run(["./gradlew.bat", command], cwd=clone_dir,stdout=subprocess.PIPE,stderr=subprocess.PIPE, check=True, shell=True)
@@ -85,7 +88,9 @@ class GradleUtils():
         
         print(gradlew)
         # process = subprocess.run([gradlew, command], cwd=os.path.join(os.getcwd(), clone_dir),stdout=subprocess.PIPE,stderr=subprocess.PIPE, check=True, shell=True)
+        # process = subprocess.run([gradlew,  "assemble", "-x", "signRelease" ], cwd=clone_dir, check=True)
         process = subprocess.run([gradlew, command], cwd=clone_dir, check=True)
+        
         
         # process = subprocess.run([gradlew, command], cwd=os.path.join(os.getcwd(), clone_dir),stdout=subprocess.PIPE,stderr=subprocess.PIPE, check=True, shell=True)
         # process = subprocess.run(["gradlew.bat", command], cwd=clone_dir, check=True)
@@ -109,45 +114,21 @@ class GradleUtils():
 
     # https://docs.gradle.org/current/userguide/compatibility.html#java_runtime
     GRADLE_JAVA_VERSIONS = {
-        '8.0': ['17', '21'],
-        '7.9': ['11', '17', '21'],
-        '7.8': ['11', '17', '21'],
-        '7.7': ['11', '17', '21'],
-        '7.6': ['11', '17', '21'],
-        '7.5': ['11', '17', '21'],
-        '7.4': ['11', '17', '21'],
-        '7.3': ['11', '17', '21'],
-        '7.2': ['11', '17'],
-        '7.1': ['11', '17'],
-        '7.0': ['11', '17'],
-        '6.9': ['8', '11'],
-        '6.8': ['8', '11'],
-        '6.7': ['8', '11'],
-        '6.6': ['8', '11'],
-        '6.5': ['8', '11'],
-        '6.4': ['8', '11'],
-        '6.3': ['8', '11'],
-        '6.2': ['8', '11'],
-        '6.1': ['8', '11'],
-        '6.0': ['8', '11'],
-        '5.6': ['8', '11'],
-        '5.5': ['8', '11'],
-        '5.4': ['8', '11'],
-        '5.3': ['8', '11'],
-        '5.2': ['8', '11'],
-        '5.1': ['8', '11'],
-        '5.0': ['8', '11'],
-        '4.10': ['7', '8'],
-        '4.9': ['7', '8'],
-        '4.8': ['7', '8'],
-        '4.7': ['7', '8'],
-        '4.6': ['7', '8'],
-        '4.5': ['7', '8'],
-        '4.4': ['7', '8'],
-        '4.3': ['7', '8'],
-        '4.2': ['7', '8'],
-        '4.1': ['7', '8'],
-        '4.0': ['7', '8']
+        (4, 0): ['7', '8'],
+        (5, 0): ['8', '11'],
+        (6, 0): ['8', '11', '12', '13', '14', '15'],
+        (6, 5): ['8', '11', '12', '13', '14', '15'],
+        (6, 8): ['8', '11', '12', '13', '14', '15'],
+        (7, 0): ['11', '12', '13', '14', '15', '16'],
+        (7, 3): ['11', '17'],
+        (7, 6): ['11', '17'],
+        (7, 9): ['11', '17'],
+        (8, 0): ['11', '17', '21'],
+        (8, 1): ['11', '17', '21'],
+        (8, 2): ['11', '17', '21'],
+        (8, 3): ['11', '17', '21'],
+        (8, 4): ['11', '17', '21'],
+        (8, 5): ['11', '17', '21'],
     }
 
     # Fallback-Werte für die neueste bekannte Version
@@ -168,27 +149,45 @@ class GradleUtils():
         if os.path.exists(wrapper_properties_file):
             with open(wrapper_properties_file, 'r') as file:
                 content = file.read()
-            match = re.search(r'distributionUrl=https://services.gradle.org/distributions/gradle-(\d+\.\d+)\.zip', content)
+            # match = re.search(r'distributionUrl=https://services.gradle.org/distributions/gradle-(\d+\.\d+)\.zip', content)
+            # match = re.search(r'distributionUrl=https://services.gradle.org/distributions/gradle-(\d+\.\d+)(?:\.\d+)?-\w+\.zip', content)
+            # match = re.search(r'distributionUrl=https://services.gradle.org/distributions/gradle-(\d+\.\d+)*.zip', content)
+            # match = re.search(r'*gradle-(\d+\.\d+)*', content)
+            match = re.search(r'gradle-(\d+\.\d+)', content)
+            print("trial version match: " + str(match))
+            print("in content " + str(content))
             if match:
                 return match.group(1)
         print("gradle properties not found " + wrapper_properties_file)
         return None
 
-    def extract_maven_version(self, folder):
-        """Extract the Maven version from maven-wrapper.properties."""
-        wrapper_properties_file = os.path.join(folder, 'mvn', 'wrapper', 'maven-wrapper.properties')
-        if os.path.exists(wrapper_properties_file):
-            with open(wrapper_properties_file, 'r') as file:
-                content = file.read()
-            match = re.search(r'distributionUrl=.*apache-maven-(\d+\.\d+\.\d+)-bin\.zip', content)
-            if match:
-                return match.group(1)
-        return None
-
     def get_java_versions_from_gradle(self, gradle_version):
         """Get the possible Java versions supported by the Gradle version with fallback to latest version."""
-        versions = self.GRADLE_JAVA_VERSIONS.get(gradle_version, self.LATEST_GRADLE_JAVA_VERSIONS)
-        return sorted(set(versions), key=lambda v: [int(i) for i in v.split('.')])
+
+        print("Looking for java version for gradle wrapper version" + gradle_version)
+
+        # Extrahiere die Haupt- und Nebenversion aus der Gradle-Version
+        try:
+            major, minor = map(int, gradle_version.split('.')[:2])
+        except ValueError:
+            return []
+
+        # Versuche, die Java-Versionen für die genaue Version zu finden
+        java_versions = self.GRADLE_JAVA_VERSIONS.get((major, minor), [])
+
+        # Wenn keine Version gefunden wurde, suche nach der nächsthöheren Minor-Version
+        if not java_versions:
+            # Suche nach der höchsten unterstützten Version, die kleiner oder gleich der angegebenen Version ist
+            available_versions = sorted(self.GRADLE_JAVA_VERSIONS.keys())
+            for (v_major, v_minor) in reversed(available_versions):
+                if v_major < major or (v_major == major and v_minor <= minor):
+                    java_versions = self.GRADLE_JAVA_VERSIONS[(v_major, v_minor)]
+                    break
+        return java_versions
+        
+        # TODO: Remove
+        #versions = self.GRADLE_JAVA_VERSIONS.get(gradle_version, self.LATEST_GRADLE_JAVA_VERSIONS)
+        #return sorted(set(versions), key=lambda v: [int(i) for i in v.split('.')])
 
     def determine_java_version(self, folder):
         gradle_version = self.extract_gradle_version(folder)
