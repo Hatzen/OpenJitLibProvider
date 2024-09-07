@@ -72,19 +72,26 @@ class GradleUtils():
         command =  "clean assembleRelease" # Maybe leading to problems with LeakCanary
         command = "assemble" # Problems with sign https://stackoverflow.com/questions/67631927/error-building-aab-flutter-android-integrity-check-failed-java-security-n
         command = "assemble -x signRelease" # gibts nicht
-        command = "assembleDebug"
+        command = "assemble -x sign" # ambigous
+        command = "assemble -x signReleaseBundle" # does only exist for android
+         # command = "assembleDebug"  # debug is not good..
+        command = "assemble"
 
-        
         print("build project in")
         # process = subprocess.run(["./gradlew.bat", command], cwd=clone_dir,stdout=subprocess.PIPE,stderr=subprocess.PIPE, check=True, shell=True)
         
         
         replaced = clone_dir.replace("/",  "\\")
         
-        # printJavaVersion(os.path.join(os.getcwd(), replaced))
-        
+        # TODO: if linux/docker use ./gradlew
         gradlew = os.path.join(os.getcwd(), replaced, "gradlew.bat")
         gradlew = gradlew.replace("/",  "\\")
+
+
+        assemble_release_tasks = self.find_assemble_release_tasks(gradlew, clone_dir, 'signReleaseBundle')
+        
+        if assemble_release_tasks:
+            command += '  -x signReleaseBundle '
         
         print(gradlew)
         # process = subprocess.run([gradlew, command], cwd=os.path.join(os.getcwd(), clone_dir),stdout=subprocess.PIPE,stderr=subprocess.PIPE, check=True, shell=True)
@@ -131,7 +138,6 @@ class GradleUtils():
         (8, 5): ['11', '17', '21'],
     }
 
-    # Fallback-Werte für die neueste bekannte Version
     LATEST_GRADLE_JAVA_VERSIONS = ['17', '21']
 
     def detect_project_type(self, folder):
@@ -149,10 +155,6 @@ class GradleUtils():
         if os.path.exists(wrapper_properties_file):
             with open(wrapper_properties_file, 'r') as file:
                 content = file.read()
-            # match = re.search(r'distributionUrl=https://services.gradle.org/distributions/gradle-(\d+\.\d+)\.zip', content)
-            # match = re.search(r'distributionUrl=https://services.gradle.org/distributions/gradle-(\d+\.\d+)(?:\.\d+)?-\w+\.zip', content)
-            # match = re.search(r'distributionUrl=https://services.gradle.org/distributions/gradle-(\d+\.\d+)*.zip', content)
-            # match = re.search(r'*gradle-(\d+\.\d+)*', content)
             match = re.search(r'gradle-(\d+\.\d+)', content)
             print("trial version match: " + str(match))
             print("in content " + str(content))
@@ -200,3 +202,35 @@ class GradleUtils():
             print("Gradle - No Gradle wrapper version found.")
             return self.ALL_JAVA_VERSION_DESC
         
+
+    def get_gradle_tasks(self, gradlew, cwd):
+        try:
+            result = subprocess.run([gradlew, "tasks", "--all"], cwd=cwd, capture_output=True, text=True, check=True)
+            return result.stdout
+        except subprocess.CalledProcessError as e:
+            print(f"Fehler beim Ausführen von gradlew tasks: {e}")
+            print(f"Fehlerausgabe (stderr): {e.stderr}")
+            print(f"Standardausgabe (stdout): {e.stdout}")
+            return None
+
+    def find_assemble_release_tasks(self, gradlew, cwd,  taskToFind):
+
+        output = self.get_gradle_tasks(gradlew, cwd)
+        if output:
+            raise("cannot get task list")
+
+        print("output")
+        print(output)
+
+        assemble_tasks = []
+        taskToFind
+        # pattern = re.compile(r'^\s*(assembleRelease\S*)', re.MULTILINE)
+        pattern = re.compile(r'^\s*(signReleaseBundle\S*)', re.MULTILINE)
+
+        for match in pattern.finditer(output):
+            assemble_tasks.append(match.group(1))
+        
+        return assemble_tasks
+    
+
+    
