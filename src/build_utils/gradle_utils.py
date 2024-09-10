@@ -24,9 +24,14 @@ class GradleUtils():
     def remove_Jcenter(self, clone_dir):
         build_gradle = os.path.join(clone_dir, 'build.gradle')
         settings_gradle = os.path.join(clone_dir, 'settings.gradle')
+        publish_gradle = os.path.join(clone_dir, 'publish.gradle')
         wrapper_gradle = os.path.join(clone_dir, 'gradle', 'wrapper', 'gradle-wrapper.properties')
         
         remove_line_with_partial_match(build_gradle, "com.novoda:bintray-release")
+        try:
+            remove_line_with_partial_match(publish_gradle, "com.novoda:bintray-release") # TODO: Remove in all files as gradle could be split up
+        except:
+            pass # publish file not existing
         remove_line_with_partial_match(build_gradle, "com.jfrog.bintray.gradle:gradle-bintray-plugin")
 
         # Bump gradle tools versions.
@@ -36,6 +41,7 @@ class GradleUtils():
         replace_line_with_partial_match(settings_gradle, old_line, new_line)
         
         # Bump gradle wrapper versions.
+            # TODO: why not bumbed? distributionUrl=https\://services.gradle.org/distributions/gradle-3.3-all.zip
         new_line = "distributionUrl=https\://services.gradle.org/distributions/gradle-4.1-all.zip'"
         old_line = 'distributionUrl=https\://services.gradle.org/distributions/gradle-3.'
         replace_line_with_partial_match(wrapper_gradle, old_line, new_line)
@@ -69,23 +75,24 @@ class GradleUtils():
         replace_line_with_partial_match(settings_gradle, old_line, new_line)
         
     def build_project(self, clone_dir):
-        command =  "clean assembleRelease" # Maybe leading to problems with LeakCanary
-        command = "assemble" # Problems with sign https://stackoverflow.com/questions/67631927/error-building-aab-flutter-android-integrity-check-failed-java-security-n
-        command = "assemble -x signRelease" # gibts nicht
-        command = "assemble -x sign" # ambigous
-        command = "assemble -x signReleaseBundle" # does only exist for android
+        # command =  "clean assembleRelease" # Maybe leading to problems with LeakCanary
+        # command = "assemble" # Problems with sign https://stackoverflow.com/questions/67631927/error-building-aab-flutter-android-integrity-check-failed-java-security-n
+        # command = "assemble -x signRelease" # gibts nicht
+        # command = "assemble -x sign" # ambigous
+        # command = "assemble -x signReleaseBundle" # does only exist for android
          # command = "assembleDebug"  # debug is not good..
+        # command = "assemble" Doesnt lead to artifact at least for AppIntro.. wrong just build some folders needs to be scanned
+        # command = "build"
         command = "assemble"
 
         print("build project in")
-        # process = subprocess.run(["./gradlew.bat", command], cwd=clone_dir,stdout=subprocess.PIPE,stderr=subprocess.PIPE, check=True, shell=True)
         
-        
-        replaced = clone_dir.replace("/",  "\\")
-        
-        # TODO: if linux/docker use ./gradlew
-        gradlew = os.path.join(os.getcwd(), replaced, "gradlew.bat")
-        gradlew = gradlew.replace("/",  "\\")
+        if os.name == 'nt':
+            replaced = clone_dir.replace("/",  "\\")
+            gradlew = os.path.join(os.getcwd(), replaced, "gradlew.bat")
+            gradlew = gradlew.replace("/",  "\\")
+        else:
+            gradlew = os.path.join(os.getcwd(), replaced, "gradlew")
 
 
         assemble_release_tasks = self.find_assemble_release_tasks(gradlew, clone_dir, 'signReleaseBundle')
@@ -93,17 +100,12 @@ class GradleUtils():
         if assemble_release_tasks:
             command += '  -x signReleaseBundle '
         
-        print(gradlew)
+        print("using gradlewrapper: " + gradlew)
         # process = subprocess.run([gradlew, command], cwd=os.path.join(os.getcwd(), clone_dir),stdout=subprocess.PIPE,stderr=subprocess.PIPE, check=True, shell=True)
-        # process = subprocess.run([gradlew,  "assemble", "-x", "signRelease" ], cwd=clone_dir, check=True)
-        process = subprocess.run([gradlew, command], cwd=clone_dir, check=True)
+        output = subprocess.run([gradlew, command], cwd=clone_dir,capture_output=True, check=True)
         
-        
-        # process = subprocess.run([gradlew, command], cwd=os.path.join(os.getcwd(), clone_dir),stdout=subprocess.PIPE,stderr=subprocess.PIPE, check=True, shell=True)
-        # process = subprocess.run(["gradlew.bat", command], cwd=clone_dir, check=True)
-        
-        # process = subprocess.run(["./gradlew.bat", command], cwd=clone_dir, capture_output=True)    
-        # process = subprocess.run(["gradlew.bat", command], cwd=clone_dir, capture_output=True)
+        # TODO: Better check for success somehow.
+        # print(output)
 
 
         # TODO: Leading to error as we have mocked them to pipe them into a file.
@@ -121,6 +123,7 @@ class GradleUtils():
 
     # https://docs.gradle.org/current/userguide/compatibility.html#java_runtime
     GRADLE_JAVA_VERSIONS = {
+        # (3, 3): ['7', '8'], TODO: Not supported as no repo offers it?
         (4, 0): ['7', '8'],
         (5, 0): ['8', '11'],
         (6, 0): ['8', '11', '12', '13', '14', '15'],
@@ -216,11 +219,11 @@ class GradleUtils():
     def find_assemble_release_tasks(self, gradlew, cwd,  taskToFind):
 
         output = self.get_gradle_tasks(gradlew, cwd)
-        if output:
-            raise("cannot get task list")
+        if not output:
+            raise Exception("cannot get task list")
 
-        print("output")
-        print(output)
+        #print("output")
+        #print(output)
 
         assemble_tasks = []
         taskToFind
@@ -229,6 +232,14 @@ class GradleUtils():
 
         for match in pattern.finditer(output):
             assemble_tasks.append(match.group(1))
+
+            
+        #print("assemble_tasks")
+        #print(assemble_tasks)
+        if not assemble_tasks:
+            print("no findings in task list output for " + taskToFind)
+            #print(output)
+        
         
         return assemble_tasks
     

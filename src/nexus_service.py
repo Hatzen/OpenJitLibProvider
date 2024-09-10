@@ -86,14 +86,16 @@ def handle_artifact_request(targetHostUrl, organization, module, version):
         print(artifact_files)
         
         if artifact_files:
+            # TODO: when artifact already exists write log or fail, or keep original name somehow?
             dest_file = save_artifact(artifact_files, organization, module, version)
             print("dest_file")
             print(dest_file)
-            packagings = getPackagings(artifact_files)
-            print("packagings")
-            print(packagings)
+            packaging = getPackagings(artifact_files)
+            print("packaging")
+            print(packaging)
             generate_maven_metadata(organization, module, version)
-            generate_pom_file(organization, module, version, packagings)
+            generate_pom_file(organization, module, version, packaging)
+            print("finished serving file " + dest_file)
             return dest_file
         
         print(f"No build artifacts found: {clone_dir}")

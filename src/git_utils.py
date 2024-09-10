@@ -30,11 +30,10 @@ def checkout_tag(repo_dir, tag):
     if '-SNAPSHOT' in tag:
         # Convert SNAPSHOT tag to branch name
         branch_name = tag.replace('-SNAPSHOT', '')
-        print(f"Tag enthält SNAPSHOT. Wechsle zu Branch: {branch_name}")
+        print(f"Tag contains SNAPSHOT. Switch to branch: {branch_name}")
         subprocess.run(['git', 'checkout', branch_name], check=True)
     else:
         try:
-            run_command(['git', 'checkout', f'tags/{tag}'], cwd=repo_dir)
             try:
                 run_command(['git', 'checkout', f'tags/{tag}'], cwd=repo_dir)
             except subprocess.CalledProcessError:

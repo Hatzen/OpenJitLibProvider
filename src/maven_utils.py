@@ -28,29 +28,28 @@ def generate_maven_metadata(organization, module, version):
         with open(metadata_path, "w") as f:
             f.write(metadata_content)
 
-def generate_pom_file(organization, module, version, packagings):
+def generate_pom_file(organization, module, version, packaging):
     group_path = organization.replace('.', '/')
     artifact_dir = os.path.join(LOCAL_REPO_PATH, group_path, module, version)
 
-    for packaging in packagings:
-        pom_file_path = os.path.join(artifact_dir, f"{module}-{version}-{packaging}.pom")
-        
-        if not os.path.exists(pom_file_path):
-            pom_content = f"""<?xml version="1.0" encoding="UTF-8"?>
+    pom_file_path = os.path.join(artifact_dir, f"{module}-{version}{packaging}.pom")
+    
+    if not os.path.exists(pom_file_path):
+        pom_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <groupId>com.github.{organization}</groupId>
-    <artifactId>{module}</artifactId>
-    <version>{version}</version>
-    <packaging>{packaging}</packaging>
-    <name>{module}</name>
-    <description>Auto-generated POM for {module}</description>
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<modelVersion>4.0.0</modelVersion>
+<groupId>com.github.{organization}</groupId>
+<artifactId>{module}</artifactId>
+<version>{version}</version>
+<packaging>{packaging}</packaging>
+<name>{module}</name>
+<description>Auto-generated POM for {module}</description>
 </project>"""
-        
-            with open(pom_file_path, "w") as f:
-                f.write(pom_content)
+    
+        with open(pom_file_path, "w") as f:
+            f.write(pom_content)
             
             write_sha1_to_file(pom_file_path)
 

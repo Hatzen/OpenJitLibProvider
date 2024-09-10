@@ -19,18 +19,35 @@ def detect_project_type(folder):
     
 
 def find_artifact_file(clone_dir):
-    filepaths = []
-    build_path = os.path.join(clone_dir, 'build', '**')
-    for filename in glob(os.path.join(build_path, '*.aar'), recursive=True):
-        print(f"Found AAR file: {filename}")
-        filepaths.append(filename)
-    for filename in glob(os.path.join(build_path, '*.jar'), recursive=True):
-        print(f"Found jar file: {filename}")
-        filepaths.append(filename)
-    for filename in glob(os.path.join(build_path, '*.war'), recursive=True):
-        print(f"Found war file: {filename}")
-        filepaths.append(filename)
-    return filepaths
+    extensions_to_find = ['.war', '.jar', '.aar'] 
+    return find_files_with_extensions(clone_dir, extensions_to_find)
+    # filepaths = []
+    # # build_path = os.path.join(clone_dir, 'build', '**')
+    # build_path = os.path.join(clone_dir, 'build')
+    # for filename in glob(os.path.join(build_path, '*.aar'), recursive=True):
+    #     print(f"Found AAR file: {filename}")
+    #     filepaths.append(filename)
+    # for filename in glob(os.path.join(build_path, '*.jar'), recursive=True):
+    #     print(f"Found jar file: {filename}")
+    #     filepaths.append(filename)
+    # for filename in glob(os.path.join(build_path, '*.war'), recursive=True):
+    #     print(f"Found war file: {filename}")
+    #     filepaths.append(filename)
+    # return filepaths
+
+
+def find_files_with_extensions(root_dir, extensions):
+    valid_artefact_dirs = ['libs', 'outputs'] # 'build' in dirpath
+
+    found_files = []
+    for dirpath, _, filenames in os.walk(root_dir):
+        if any(artefact_dir in dirpath for artefact_dir in valid_artefact_dirs):
+            for file in filenames:
+                # Prüfe, ob die Datei eine der angegebenen Endungen hat
+                if any(file.endswith(ext) for ext in extensions):
+                    found_files.append(os.path.join(dirpath, file))
+    
+    return found_files
 
 def save_artifact(artifact_files, organization, module, version):
     dest_dir = getArtifactDest(organization, module, version)
@@ -38,7 +55,8 @@ def save_artifact(artifact_files, organization, module, version):
     for artifact in artifact_files:
         ending = getEnding(artifact)
         dest_file = os.path.join(dest_dir, f"{module}-{version}{ending}")
-        # print(artifact + " " + dest_file)
+        print("saving artifact")
+        print(artifact + " " + dest_file)
         if os.path.exists(dest_file):
             os.remove(dest_file)
         os.rename(artifact, dest_file)

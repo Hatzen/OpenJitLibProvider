@@ -8,6 +8,7 @@ from consts import LOCAL_CONFIG_FILE
 from app import app
 
 config = load_properties(LOCAL_CONFIG_FILE)
+print(config)
 
 stdJava = None
 try:

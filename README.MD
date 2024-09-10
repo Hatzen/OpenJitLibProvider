@@ -16,7 +16,7 @@ This project provides a custom Maven artifact repository using Flask, which clon
 
 Usually it is recommended to use a real maven nexus to host your artifacts. Some use public hosting some may prefer to have an onpremise nexus. 
 Especially when it comes to open source libraries it is up to the repository owner if he is serving his artifacts in a public repo like maven central, google or in the past jcenter.
-Some may not have published and abondomed there working project so it would be unethical to copy or fork the repo only to provide this artifacts.
+Some may not have published and abondomed there working project so it might be unethical to copy or fork the repo only to provide this artifacts.
 That where JitPack comes in handy at least for side projects which have a small budget on hosting or providing libraries. It compiles all open source code "just in time" for libraries and snapshots very fine the last few years.
 
 On the other hand jitpack is neither open source (except its docs) nor is completly clear if it financially stable enough to provide artifacts for the next few years. Espacially the number of open issues and the browndown of jcenter made it not to reliable. 

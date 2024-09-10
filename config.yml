@@ -5,6 +5,7 @@ NEXUS_PORT: 5000
 JAVA_HOME:
     "1.8": "C:/Program Files/Java/openlogic-openjdk-8u422-b05-windows-x64/"
     "1.11": "C:/Program Files/Java/jdk-11.0.2/"
+    "1.17": "C:/Program Files/Java/jdk-17/"
     "1.21": "C:/Program Files/Java/jdk-21/"
 
 # Make sure to accept the license for the sdk.

@@ -1,10 +1,4 @@
 import os
-import sys
-import subprocess
-from glob import glob
-from consts import LOCAL_CLONE_PATH, LOCAL_REPO_PATH
-import xml.etree.ElementTree as ET
-import re
 from config import load_properties
 from consts import LOCAL_CONFIG_FILE
 from build_utils.gradle_utils import GradleUtils
@@ -26,6 +20,7 @@ def build(clone_dir):
         raise("Project type could not be determined. The folder does not contain Maven or Gradle configuration files.")
 
     javaVersions = build_tool.determine_java_version(clone_dir)
+    javaVersions.sort(reverse=True) # Use newest version first as it probably contain more features (e.g. security algorithms)
     config = load_properties(LOCAL_CONFIG_FILE)
     stdJava = ""
     for javaVersion in javaVersions:
@@ -35,7 +30,7 @@ def build(clone_dir):
         if stdJava:
             break
     if not stdJava:
-        raise("Java version not defined " + javaVersions)
+        raise Exception("Java version not defined " + str(javaVersions))
 
     os.environ['JAVA_HOME'] = stdJava
     os.environ['PATH'] = f"{stdJava}\\bin;" + os.environ['PATH']
@@ -43,11 +38,6 @@ def build(clone_dir):
 
     print("update build files..")
     build_tool.update_build_files(clone_dir)
-    
-    # TODO: Remove. checked on higher level
-    # if os.path.exists(os.path.join(clone_dir, "build")):
-    #    print("build files exist not building again")
-    #    return # check commit hash and remove build dir.
 
     print("build files..")
     build_tool.build_project(clone_dir)
