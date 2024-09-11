@@ -46,7 +46,7 @@ def handleRepositoryCall(artifact_path: str):
 
 def getArtifact(targetHostUrl, organization, module, version, artifact_file):
     print("getArtifact: " + artifact_file)
-    # TODO: do we need this to handle maven files properly? 
+    # TODO: do we need this to handle maven files like pom and metadata differently? 
     # if not os.path.exists(artifact_file):
     artifact_file = handle_artifact_request(targetHostUrl, organization, module, version)
 

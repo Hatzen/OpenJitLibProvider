@@ -41,8 +41,7 @@ class GradleUtils():
         replace_line_with_partial_match(settings_gradle, old_line, new_line)
         
         # Bump gradle wrapper versions.
-            # TODO: why not bumbed? distributionUrl=https\://services.gradle.org/distributions/gradle-3.3-all.zip
-        new_line = "distributionUrl=https\://services.gradle.org/distributions/gradle-4.1-all.zip'"
+        new_line = "distributionUrl=https\://services.gradle.org/distributions/gradle-4.1-all.zip"
         old_line = 'distributionUrl=https\://services.gradle.org/distributions/gradle-3.'
         replace_line_with_partial_match(wrapper_gradle, old_line, new_line)
         old_line = 'distributionUrl=https\://services.gradle.org/distributions/gradle-2.'
@@ -75,14 +74,6 @@ class GradleUtils():
         replace_line_with_partial_match(settings_gradle, old_line, new_line)
         
     def build_project(self, clone_dir):
-        # command =  "clean assembleRelease" # Maybe leading to problems with LeakCanary
-        # command = "assemble" # Problems with sign https://stackoverflow.com/questions/67631927/error-building-aab-flutter-android-integrity-check-failed-java-security-n
-        # command = "assemble -x signRelease" # gibts nicht
-        # command = "assemble -x sign" # ambigous
-        # command = "assemble -x signReleaseBundle" # does only exist for android
-         # command = "assembleDebug"  # debug is not good..
-        # command = "assemble" Doesnt lead to artifact at least for AppIntro.. wrong just build some folders needs to be scanned
-        # command = "build"
         command = "assemble"
 
         print("build project in")
@@ -95,8 +86,8 @@ class GradleUtils():
             gradlew = os.path.join(os.getcwd(), replaced, "gradlew")
 
 
+        # Avoid signing apks, may lead to problems with hash not available (might be resolved by using newest java version.)
         assemble_release_tasks = self.find_assemble_release_tasks(gradlew, clone_dir, 'signReleaseBundle')
-        
         if assemble_release_tasks:
             command += '  -x signReleaseBundle '
         
@@ -106,8 +97,6 @@ class GradleUtils():
         
         # TODO: Better check for success somehow.
         # print(output)
-
-
         # TODO: Leading to error as we have mocked them to pipe them into a file.
         # , stdin=sys.stdout, stderr=sys.stderr
         
@@ -123,7 +112,7 @@ class GradleUtils():
 
     # https://docs.gradle.org/current/userguide/compatibility.html#java_runtime
     GRADLE_JAVA_VERSIONS = {
-        # (3, 3): ['7', '8'], TODO: Not supported as no repo offers it?
+        (3, 0): ['7', '8'], # theoretically not needed as should be bumbed to version 4
         (4, 0): ['7', '8'],
         (5, 0): ['8', '11'],
         (6, 0): ['8', '11', '12', '13', '14', '15'],
@@ -177,22 +166,20 @@ class GradleUtils():
         except ValueError:
             return []
 
-        # Versuche, die Java-Versionen für die genaue Version zu finden
+        # find exact match
         java_versions = self.GRADLE_JAVA_VERSIONS.get((major, minor), [])
 
         # Wenn keine Version gefunden wurde, suche nach der nächsthöheren Minor-Version
         if not java_versions:
-            # Suche nach der höchsten unterstützten Version, die kleiner oder gleich der angegebenen Version ist
+            # look for highest version that is lower equal than the needed version
             available_versions = sorted(self.GRADLE_JAVA_VERSIONS.keys())
             for (v_major, v_minor) in reversed(available_versions):
                 if v_major < major or (v_major == major and v_minor <= minor):
                     java_versions = self.GRADLE_JAVA_VERSIONS[(v_major, v_minor)]
                     break
+        if not java_versions:
+            java_versions = self.GRADLE_JAVA_VERSIONS[(v_major, v_minor)]
         return java_versions
-        
-        # TODO: Remove
-        #versions = self.GRADLE_JAVA_VERSIONS.get(gradle_version, self.LATEST_GRADLE_JAVA_VERSIONS)
-        #return sorted(set(versions), key=lambda v: [int(i) for i in v.split('.')])
 
     def determine_java_version(self, folder):
         gradle_version = self.extract_gradle_version(folder)

@@ -19,6 +19,9 @@ def build(clone_dir):
     else:
         raise("Project type could not be determined. The folder does not contain Maven or Gradle configuration files.")
 
+    print("update build files..")
+    build_tool.update_build_files(clone_dir)
+
     javaVersions = build_tool.determine_java_version(clone_dir)
     javaVersions.sort(reverse=True) # Use newest version first as it probably contain more features (e.g. security algorithms)
     config = load_properties(LOCAL_CONFIG_FILE)
@@ -35,9 +38,6 @@ def build(clone_dir):
     os.environ['JAVA_HOME'] = stdJava
     os.environ['PATH'] = f"{stdJava}\\bin;" + os.environ['PATH']
     print("using java version " + stdJava + " of possible " + str(javaVersions))
-
-    print("update build files..")
-    build_tool.update_build_files(clone_dir)
 
     print("build files..")
     build_tool.build_project(clone_dir)
