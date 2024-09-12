@@ -1,30 +1,39 @@
+# Use Python 3.11 Alpine image
 FROM python:3.11-alpine
 
+# Set environment variables
 ENV ANDROID_HOME=/opt/android-sdk
-ENV PATH="${PATH}:${ANDROID_HOME}/tools:${ANDROID_HOME}/platform-tools"
+ENV JAVA_8_HOME=/usr/lib/jvm/java-8
+ENV JAVA_11_HOME=/usr/lib/jvm/java-11
+ENV JAVA_17_HOME=/usr/lib/jvm/java-17
+ENV JAVA_21_HOME=/usr/lib/jvm/java-21
+ENV PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
 
-RUN apk update && apk add --no-cache \
-    openjdk8-jdk \
-    openjdk11-jdk \
-    # openjdk12-jdk \ https://stackoverflow.com/questions/55954399/how-to-install-the-latest-openjdk-12-on-ubuntu-18-04
-    openjdk17-jdk \
-    openjdk21-jdk \
-    bash \
-    curl \
-    wget \
-    unzip \
-    git \
-    build-base \
-    python3-dev \
-    py3-pip
-    #py3-venv
+# Install necessary tools
+RUN apk update && \
+    apk add --no-cache bash wget curl unzip zip openjdk8 openjdk11 openjdk17 openjdk21
 
-RUN mkdir -p ${ANDROID_HOME} && \
+# Manually create symlinks for the different JDK versions
+RUN mkdir -p /usr/lib/jvm && \
+    ln -s /usr/lib/jvm/java-1.8-openjdk /usr/lib/jvm/java-8 && \
+    ln -s /usr/lib/jvm/java-11-openjdk /usr/lib/jvm/java-11 && \
+    ln -s /usr/lib/jvm/java-17-openjdk /usr/lib/jvm/java-17 && \
+    ln -s /usr/lib/jvm/java-21-openjdk /usr/lib/jvm/java-21
+
+# Default to Java 17
+ENV JAVA_HOME=$JAVA_17_HOME
+ENV PATH=$JAVA_HOME/bin:$PATH
+
+# Install Android SDK command line tools
+RUN mkdir -p ${ANDROID_HOME}/cmdline-tools && \
     wget -q https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip -O commandlinetools.zip && \
-    unzip commandlinetools.zip -d ${ANDROID_HOME} && \
+    unzip commandlinetools.zip -d ${ANDROID_HOME}/cmdline-tools && \
     rm commandlinetools.zip && \
-    yes | sdkmanager --licenses && \
-    sdkmanager "platform-tools" "platforms;android-30"
+    mv ${ANDROID_HOME}/cmdline-tools/cmdline-tools ${ANDROID_HOME}/cmdline-tools/latest
+
+# Install Android SDK components
+RUN yes | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses && \
+    ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-30"
 
 WORKDIR /app
 COPY . /app
@@ -36,4 +45,13 @@ EXPOSE 5000
 #CMD ["python3", "src/__init__.py"]
 #CMD ["gunicorn", "-w", "-b", "127.0.0.1:8000", "myapp:app"]
 #gunicorn -w 4 -b 127.0.0.1:8000 myapp:app
-CMD ["gunicorn", "-w", "-b", "127.0.0.1:8000", "src:app"]
+# CMD ["gunicorn", "-w", "4", "-b", "127.0.0.1:8000", "--chdir", "src/", "src:app"]
+# CMD ["gunicorn", "-w", "4", "-b", "127.0.0.1:8000", "src:__init__"]
+# CMD ["gunicorn", "-w", "4", "-b", "127.0.0.1:8000", "src.__init__:app"]
+#CMD ["gunicorn", "-w", "4", "-b", "127.0.0.1:8000", "--chdir", "src", "__init__:app"]
+
+CMD ["gunicorn", "-w", "4", "-b", "127.0.0.1:8000", "-e", "PYTHONPATH=src", "src:app"]
+#CMD ["gunicorn", "-w", "4", "-b", "127.0.0.1:8000", "-e", "PYTHONPATH=src", "src.__init__:app"]
+
+
+# CMD ["gunicorn", "-w", "4", "-b", "127.0.0.1:8000", "--chdir", "src", "-e", "PYTHONPATH=..", "__init__:app"]
