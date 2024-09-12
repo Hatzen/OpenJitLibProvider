@@ -54,10 +54,10 @@ def log_method_output(method, args, kwargs, organization, module, version, file_
    
     # Redirect stdout and stderr to StringIO objects
     # Backup current stdout and stderr
-    #original_stdout = sys.stdout
-    #original_stderr = sys.stderr
-    #sys.stdout = StringIO()
-    #sys.stderr = StringIO()
+    original_stdout = sys.stdout
+    original_stderr = sys.stderr
+    sys.stdout = StringIO()
+    sys.stderr = StringIO()
 
 
     result = None
@@ -91,8 +91,8 @@ def log_method_output(method, args, kwargs, organization, module, version, file_
     finally:
         print("finally arrived")
         # Restore original stdout and stderr
-        #sys.stdout = original_stdout
-        #sys.stderr = original_stderr
+        sys.stdout = original_stdout
+        sys.stderr = original_stderr
         
         print(resultText)
         return result

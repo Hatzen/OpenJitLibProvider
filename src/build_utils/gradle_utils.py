@@ -74,7 +74,7 @@ class GradleUtils():
         replace_line_with_partial_match(settings_gradle, old_line, new_line)
         
     def build_project(self, clone_dir):
-        command = "assemble"
+        command = ["assemble"]
 
         print("build project in")
         
@@ -89,45 +89,38 @@ class GradleUtils():
         # Avoid signing apks, may lead to problems with hash not available (might be resolved by using newest java version.)
         assemble_release_tasks = self.find_assemble_release_tasks(gradlew, clone_dir, 'signReleaseBundle')
         if assemble_release_tasks:
-            command += '  -x signReleaseBundle '
+            # command += '  -x signReleaseBundle '
+            command += ['-x', 'signReleaseBundle']
         
         print("using gradlewrapper: " + gradlew)
-        # process = subprocess.run([gradlew, command], cwd=os.path.join(os.getcwd(), clone_dir),stdout=subprocess.PIPE,stderr=subprocess.PIPE, check=True, shell=True)
-        output = subprocess.run([gradlew, command], cwd=clone_dir,capture_output=True, check=True)
+        output = subprocess.run([gradlew, *command], cwd=clone_dir,capture_output=True)
         
-        # TODO: Better check for success somehow.
+        # print("output")
         # print(output)
-        # TODO: Leading to error as we have mocked them to pipe them into a file.
-        # , stdin=sys.stdout, stderr=sys.stderr
-        
-        # Needed when sys.stdout is catched.
-        # tdout, stderr = process.communicate()
-        # tdout.seek(0)
-        # tderr.seek(0)
-        # ys.stdout.write(stdout.decode())
-        # ys.stderr.write(stderr.decode())
+        sys.stdout.write(output.stdout.decode())
+        sys.stderr.write(output.stderr.decode())
 
-
-    ALL_JAVA_VERSION_DESC = ['21', '17','11','8' ]
+        if output.returncode != 0:
+            raise Exception("failed build with returncode " + str(output.returncode))
+            # When failing with
+            # > com.android.ide.common.signing.KeytoolException: Failed to read key AndroidDebugKey from store "C:\Users\xxx\.android\debug.keystore": Integrity check failed: java.security.NoSuchAlgorithmException: Algorithm HmacPBESHA256 not available
+            # then jdk 12 and above is needed
 
     # https://docs.gradle.org/current/userguide/compatibility.html#java_runtime
     GRADLE_JAVA_VERSIONS = {
         (3, 0): ['7', '8'], # theoretically not needed as should be bumbed to version 4
         (4, 0): ['7', '8'],
         (5, 0): ['8', '11'],
-        (6, 0): ['8', '11', '12', '13', '14', '15'],
-        (6, 5): ['8', '11', '12', '13', '14', '15'],
-        (6, 8): ['8', '11', '12', '13', '14', '15'],
+        (5, 4): ['8', '11', '12'],
+        (6, 0): ['8', '11', '12', '13'],
+        (6, 3): ['8', '11', '12', '13', '14'],
+        (6, 7): ['8', '11', '12', '13', '14', '15'],
         (7, 0): ['11', '12', '13', '14', '15', '16'],
-        (7, 3): ['11', '17'],
-        (7, 6): ['11', '17'],
-        (7, 9): ['11', '17'],
-        (8, 0): ['11', '17', '21'],
-        (8, 1): ['11', '17', '21'],
-        (8, 2): ['11', '17', '21'],
-        (8, 3): ['11', '17', '21'],
-        (8, 4): ['11', '17', '21'],
-        (8, 5): ['11', '17', '21'],
+        (7, 3): ['11', '12', '13', '14', '15', '16', '17'],
+        (7, 5): ['11', '12', '13', '14', '15', '16', '17', '18'],
+        (7, 6): ['11', '12', '13', '14', '15', '16', '17', '18', '19'],
+        (8, 3): ['11', '12', '13', '14', '15', '16', '17', '18', '19', '20'],
+        (8, 5): ['11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21'],
     }
 
     LATEST_GRADLE_JAVA_VERSIONS = ['17', '21']
@@ -148,8 +141,8 @@ class GradleUtils():
             with open(wrapper_properties_file, 'r') as file:
                 content = file.read()
             match = re.search(r'gradle-(\d+\.\d+)', content)
-            print("trial version match: " + str(match))
-            print("in content " + str(content))
+            #print("trial version match: " + str(match))
+            #print("in content " + str(content))
             if match:
                 return match.group(1)
         print("gradle properties not found " + wrapper_properties_file)
@@ -169,7 +162,7 @@ class GradleUtils():
         # find exact match
         java_versions = self.GRADLE_JAVA_VERSIONS.get((major, minor), [])
 
-        # Wenn keine Version gefunden wurde, suche nach der nächsthöheren Minor-Version
+        # if no direct match find next higher Minor-Version
         if not java_versions:
             # look for highest version that is lower equal than the needed version
             available_versions = sorted(self.GRADLE_JAVA_VERSIONS.keys())
@@ -190,7 +183,7 @@ class GradleUtils():
             return versions
         else:
             print("Gradle - No Gradle wrapper version found.")
-            return self.ALL_JAVA_VERSION_DESC
+            return self.GRADLE_JAVA_VERSIONS[-1] # use latest version
         
 
     def get_gradle_tasks(self, gradlew, cwd):
@@ -208,27 +201,17 @@ class GradleUtils():
         output = self.get_gradle_tasks(gradlew, cwd)
         if not output:
             raise Exception("cannot get task list")
-
-        #print("output")
-        #print(output)
-
-        assemble_tasks = []
-        taskToFind
-        # pattern = re.compile(r'^\s*(assembleRelease\S*)', re.MULTILINE)
-        pattern = re.compile(r'^\s*(signReleaseBundle\S*)', re.MULTILINE)
-
-        for match in pattern.finditer(output):
-            assemble_tasks.append(match.group(1))
-
             
         #print("assemble_tasks")
         #print(assemble_tasks)
-        if not assemble_tasks:
+        if taskToFind not in output:
             print("no findings in task list output for " + taskToFind)
-            #print(output)
+            print("available tasks:")
+            print(output)
+            return False
         
         
-        return assemble_tasks
+        return True
     
 
     

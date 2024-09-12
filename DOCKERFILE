@@ -6,7 +6,9 @@ ENV PATH="${PATH}:${ANDROID_HOME}/tools:${ANDROID_HOME}/platform-tools"
 RUN apk update && apk add --no-cache \
     openjdk8-jdk \
     openjdk11-jdk \
+    # openjdk12-jdk \ https://stackoverflow.com/questions/55954399/how-to-install-the-latest-openjdk-12-on-ubuntu-18-04
     openjdk17-jdk \
+    openjdk21-jdk \
     bash \
     curl \
     wget \
@@ -14,8 +16,8 @@ RUN apk update && apk add --no-cache \
     git \
     build-base \
     python3-dev \
-    py3-pip \
-    py3-venv
+    py3-pip
+    #py3-venv
 
 RUN mkdir -p ${ANDROID_HOME} && \
     wget -q https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip -O commandlinetools.zip && \

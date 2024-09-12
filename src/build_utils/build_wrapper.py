@@ -23,11 +23,13 @@ def build(clone_dir):
     build_tool.update_build_files(clone_dir)
 
     javaVersions = build_tool.determine_java_version(clone_dir)
+    # Make sort it properly
+    javaVersions = [int(x) for x in javaVersions]
     javaVersions.sort(reverse=True) # Use newest version first as it probably contain more features (e.g. security algorithms)
     config = load_properties(LOCAL_CONFIG_FILE)
     stdJava = ""
     for javaVersion in javaVersions:
-        fullJavaVersion = '1.' + javaVersion
+        fullJavaVersion = '1.' + str(javaVersion)
         stdJava = config['JAVA_HOME'].get(fullJavaVersion)
         print("possible java version" + fullJavaVersion + " " + str(stdJava))
         if stdJava:
