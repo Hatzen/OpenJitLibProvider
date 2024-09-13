@@ -27,4 +27,5 @@ os.environ['ANDROID_SDK_ROOT'] = config['ANDROID_SDK_ROOT']
 os.environ['ANDROID_HOME'] = config['ANDROID_SDK_ROOT']
 
 startCronCleaner()
+# TODO: Remove or at least make debugApp.py
 app.run(host="0.0.0.0", port=config['NEXUS_PORT'])

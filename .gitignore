@@ -4,4 +4,4 @@ src/**/__pycache__
 **/.gradle
 **/build
 logs/
-./config.yml
+/config.yml
