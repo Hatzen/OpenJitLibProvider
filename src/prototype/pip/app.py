@@ -1,6 +1,5 @@
 import os
 import subprocess
-import tarfile
 import shutil
 from flask import Flask, jsonify, send_file, request
 
@@ -31,32 +30,28 @@ def build_package(build_dir):
     This function assumes either 'setup.py' or 'pyproject.toml' is present.
     """
     if os.path.exists(os.path.join(build_dir, "setup.py")):
-        # Build using setuptools
-        subprocess.run(["python3", "setup.py", "sdist"], cwd=build_dir)
+        # Build using setuptools (creates a wheel and sdist)
+        subprocess.run(["python3", "-m", "build"], cwd=build_dir)
     elif os.path.exists(os.path.join(build_dir, "pyproject.toml")):
-        # Build using poetry
+        # Build using poetry (creates a wheel and sdist)
         subprocess.run(["poetry", "build"], cwd=build_dir)
     else:
         raise FileNotFoundError("No setup.py or pyproject.toml found in project")
 
 def create_package(build_dir, package_name, version):
     """
-    Package the built Python project as a tarball (or wheel) for distribution.
+    Package the built Python project as a wheel or sdist for distribution.
     """
-    package_path = os.path.join(PACKAGE_DIR, f"{package_name}-{version}.tar.gz")
-    
-    # Locate the distribution file in the `dist` directory
     dist_dir = os.path.join(build_dir, "dist")
     if not os.path.exists(dist_dir):
         raise FileNotFoundError(f"No 'dist' directory found in {build_dir}")
 
-    # Move the distribution file to the PACKAGE_DIR
+    # Return the wheel or sdist file path
     dist_files = os.listdir(dist_dir)
     if not dist_files:
         raise FileNotFoundError(f"No distribution files found in {dist_dir}")
 
-    shutil.copy(os.path.join(dist_dir, dist_files[0]), package_path)
-    return package_path
+    return os.path.join(dist_dir, dist_files[0])
 
 @app.route("/<package_name>/-/<package_name>-<version>.tar.gz", methods=["GET"])
 def serve_package(package_name, version):

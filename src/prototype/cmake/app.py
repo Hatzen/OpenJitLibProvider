@@ -1,13 +1,11 @@
 import os
 import subprocess
-import tarfile
 import shutil
-from flask import Flask, jsonify, send_file, request
+from flask import Flask, jsonify, send_file
 
 app = Flask(__name__)
 
-# Directories for cloning, building, and packaging
-BUILD_DIR = "/tmp/cpp-builds"
+BUILD_DIR = "/tmp/cpp-conan"
 PACKAGE_DIR = "/tmp/cpp-packages"
 GITHUB_ORG = "my-org"  # Example: your GitHub organization or username
 
@@ -17,41 +15,71 @@ def clone_repo(package_name, version, build_dir):
     """
     repo_url = f"https://github.com/{GITHUB_ORG}/{package_name}.git"
     
-    # Clean up previous build directory
     if os.path.exists(build_dir):
         shutil.rmtree(build_dir)
     os.makedirs(build_dir)
 
-    # Clone the repository and check out the specified version
     subprocess.run(["git", "clone", "--branch", version, repo_url, build_dir])
 
-def build_project(build_dir):
+def create_conan_package(build_dir):
     """
-    Use CMake to build the C++ project.
-    Assumes CMakeLists.txt is present in the project root.
+    Build the Conan package.
+    Assumes the project has a `conanfile.py` or `conanfile.txt`.
     """
-    build_subdir = os.path.join(build_dir, "build")
-    os.makedirs(build_subdir, exist_ok=True)
+    if not os.path.exists(os.path.join(build_dir, "conanfile.py")) and not os.path.exists(os.path.join(build_dir, "conanfile.txt")):
+        raise FileNotFoundError("No conanfile found in project")
+
+    subprocess.run(["conan", "create", build_dir, "."], cwd=build_dir)
+
+@app.route("/<package_name>/-/<package_name>-<version>.tar.gz", methods=["GET"])
+def serve_package(package_name, version):
+    """
+    Endpoint to serve the C++ Conan package.
+    """
+    build_dir = os.path.join(BUILD_DIR, package_name, version)
     
-    # Run CMake to configure and build the project
-    subprocess.run(["cmake", ".."], cwd=build_subdir)
-    subprocess.run(["cmake", "--build", "."], cwd=build_subdir)
+    try:
+        # 1. Clone the repository from GitHub
+        clone_repo(package_name, version, build_dir)
+        
+        # 2. Build the Conan package
+        create_conan_package(build_dir)
+
+        # 3. Serve the package (e.g., serve the conan recipe or binary)
+        conan_package_path = os.path.join(build_dir, "conan_package")  # Adjust this as necessary
+        return send_file(conan_package_path, as_attachment=True)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+def build_package(build_dir):
+    """
+    Use setuptools or poetry to build the Python package.
+    This function assumes either 'setup.py' or 'pyproject.toml' is present.
+    """
+    if os.path.exists(os.path.join(build_dir, "setup.py")):
+        # Build using setuptools (creates a wheel and sdist)
+        subprocess.run(["python3", "-m", "build"], cwd=build_dir)
+    elif os.path.exists(os.path.join(build_dir, "pyproject.toml")):
+        # Build using poetry (creates a wheel and sdist)
+        subprocess.run(["poetry", "build"], cwd=build_dir)
+    else:
+        raise FileNotFoundError("No setup.py or pyproject.toml found in project")
 
 def create_package(build_dir, package_name, version):
     """
-    Package the built project as a tarball (or zip) for distribution.
+    Package the built Python project as a wheel or sdist for distribution.
     """
-    package_path = os.path.join(PACKAGE_DIR, f"{package_name}-{version}.tar.gz")
-    
-    # Remove any previous package
-    if os.path.exists(package_path):
-        os.remove(package_path)
+    dist_dir = os.path.join(build_dir, "dist")
+    if not os.path.exists(dist_dir):
+        raise FileNotFoundError(f"No 'dist' directory found in {build_dir}")
 
-    # Create a new tarball from the build directory
-    with tarfile.open(package_path, "w:gz") as tar:
-        tar.add(build_dir, arcname=os.path.basename(build_dir))
-    
-    return package_path
+    # Return the wheel or sdist file path
+    dist_files = os.listdir(dist_dir)
+    if not dist_files:
+        raise FileNotFoundError(f"No distribution files found in {dist_dir}")
+
+    return os.path.join(dist_dir, dist_files[0])
 
 @app.route("/<package_name>/-/<package_name>-<version>.tar.gz", methods=["GET"])
 def serve_package(package_name, version):

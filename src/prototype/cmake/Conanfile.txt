@@ -1,0 +1,16 @@
+[requires]
+my-package/1.0.0
+
+[generators]
+cmake
+
+[options]
+my-package:shared=True
+
+[imports]
+lib, *.dll -> ./bin
+lib, *.dylib* -> ./bin
+bin, *.exe -> ./bin
+
+[remotes]
+my-remote=http://localhost:5000

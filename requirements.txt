@@ -1,4 +1,5 @@
-flask
-gunicorn
-pyyaml
-schedule
+flask       # Serve locally dev
+gunicorn    # Serve production 
+pyyaml      # Parse yml
+schedule    # Cronjobs to clean artifacts
+conan       # C++ Builds
