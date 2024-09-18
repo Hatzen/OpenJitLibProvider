@@ -1,18 +1,46 @@
 # Custom Maven Artifact Repository with GitHub Integration
 
-This project provides a custom Maven artifact repository using Flask, which clones, builds, and serves artifacts from GitHub repositories. It supports building Android libraries and generating necessary Maven metadata for the artifacts.
+This project provides a custom Maven artifact repository, which clones, builds, and serves artifacts from GitHub repositories. It supports building Android libraries and generating necessary Maven metadata for the artifacts.
 
 ## Table of Contents
+- [When to use](#when-to-use)
 - [Features](#features)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Usage](#usage)
-- [Project Structure](#project-structure)
 - [Troubleshooting](#troubleshooting)
 - [License](#license)
 
 # When to use
+
+
+## Short
+
+### Maven Nexus
++ Should be preferred
++ Stable artifacts
++ Free and known hosts like google or mavenCentral
++ Fork Repos and share your progress with the community easily
+
+### JitPack
++ For Sideprojects where hosting or setting up infrastructure is to time consuming and has costs
++ Handy for projects that are not maintained activly anymore
++ Free for open source
++ Mostly reliable infrastructure
++ "state of the art", proven to work well
++ pleasent docs
+- only docs are open source, private code checkout to foreign servers
+
+### OpenJitLibProvider
++ Fully Open Source, get features you need by contributing or profit from other maintainers
++ On Premise possible
++ "Offline" possible (does not necessarily rely on a server other than github)
++ Customization Hooks possible (like include vulnerable checks or already included automatic replacemeent of jcenter)
+- Needs contributors, currently unstable
+- less features
+
+## Long
 
 Usually it is recommended to use a real maven nexus to host your artifacts. Some use public hosting some may prefer to have an onpremise nexus. 
 Especially when it comes to open source libraries it is up to the repository owner if he is serving his artifacts in a public repo like maven central, google or in the past jcenter.
@@ -41,17 +69,14 @@ OR
 
 ### Clone the Repository:
 ```bash
-git clone https://github.com/yourusername/custom-maven-repo.git
-cd custom-maven-repo
+git clone https://github.com/Hatzen/OpenJitLibProvider.git
+cd OpenJitLibProvider
 ```
 
 ### Install Python Dependencies:
 ```bash
 pip install -r requirements.txt
 ```
-
-### Set Up Java and Android SDK:
-Ensure you have the correct paths for `JAVA_HOME` and `ANDROID_SDK_ROOT` in your system.
 
 ## Configuration
 
