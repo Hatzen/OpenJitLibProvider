@@ -3,18 +3,18 @@ import datetime
 import hashlib
 from consts import LOCAL_CLONE_PATH, LOCAL_REPO_PATH
 
-def generate_maven_metadata(organization, module, version):
+def generate_maven_metadata(organization, repo, version):
     group_path = organization.replace('.', '/')
-    artifact_dir = os.path.join(LOCAL_REPO_PATH, group_path, module)
+    artifact_dir = os.path.join(LOCAL_REPO_PATH, group_path, repo)
     
     metadata_path = os.path.join(artifact_dir, "maven-metadata.xml")
     if not os.path.exists(metadata_path):
         last_updated = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-        # TODO: Need proper versioning for different versions and info of commithash for snapshots. but then its complicated to read it..
+        # TODO: Need proper versioning for different versions
         metadata_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <metadata>
     <groupId>{organization}</groupId>
-    <artifactId>{module}</artifactId>
+    <artifactId>{repo}</artifactId>
     <versioning>
         <latest>{version}</latest>
         <release>{version}</release>

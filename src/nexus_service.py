@@ -31,35 +31,41 @@ def handleRepositoryCall(artifact_path: str):
     if not parts: 
         abort(404, "No matching host found. Maybe add one to KNOWN_HOSTS within config.")
 
-    if len(parts) < 4 or len(parts) > 4:
-        abort(404 if len(parts) > 4 else 400, "Invalid artifact URL")
+    if len(parts) < 4 or len(parts) > 5:
+        abort(400, "Invalid artifact URL")
 
-    organization, module, version, file_name = parts[0], parts[1], parts[2], parts[-1]
-    artifact_dir = os.path.join(LOCAL_REPO_PATH, organization, module, version)
+    organization, repo, version, file_name = parts[0], parts[1], parts[2], parts[-1]
+    if len(parts) == 5:
+        module = parts[3]
+    else:
+        module = repo
+    artifact_dir = os.path.join(LOCAL_REPO_PATH, organization, repo, version)
+
+    # TODO: Needs fix for module
     artifact_file = os.path.join(artifact_dir, file_name)
 
-    response = log_method_output(getArtifact, (targetHostUrl, organization, module, version, artifact_file), {}, organization, module, version, file_name)
+    response = log_method_output(getArtifact, (targetHostUrl, organization, repo, version, artifact_file),
+                    {}, organization, repo, module, version, file_name)
     if response:
         return response
     abort(500, "Could not get or create artifact")
     
 
-def getArtifact(targetHostUrl, organization, module, version, artifact_file):
+def getArtifact(targetHostUrl, organization, repo, module, version, artifact_file):
     print("getArtifact: " + artifact_file)
-    # TODO: do we need this to handle maven files like pom and metadata differently? 
-    # if not os.path.exists(artifact_file):
-    artifact_file = handle_artifact_request(targetHostUrl, organization, module, version)
+    # TODO: do we need this to handle maven files like pom and metadata differently?
+    # TODO: pass and use module somehow
+    artifact_file = handle_artifact_request(targetHostUrl, organization, repo, version)
 
-    # Remove? TODO: repo/Hatzen\ExampleNameProvider\main-SNAPSHOT missing jar files for some reaason..
     if artifact_file and os.path.exists(artifact_file):
         # TODO: Why we need to get a folder up, when git and build is working fine and path exists..
         return send_file("../" + artifact_file)
     else:
         abort(404, "Artifact not found: " + str(artifact_file))
 
-def handle_artifact_request(targetHostUrl, organization, module, version):
-    repo_url = get_repo_url(targetHostUrl, organization, module)
-    clone_dir = os.path.join(LOCAL_CLONE_PATH, f"{module}-{version}")
+def handle_artifact_request(targetHostUrl, organization, repo, version):
+    repo_url = get_repo_url(targetHostUrl, organization, repo)
+    clone_dir = os.path.join(LOCAL_CLONE_PATH, f"{repo}-{version}")
     os.makedirs(clone_dir, exist_ok=True)
     
     try:
@@ -67,7 +73,7 @@ def handle_artifact_request(targetHostUrl, organization, module, version):
         clone_and_checkout(repo_url, version, clone_dir)
 
         print("check hash")
-        artifactFolder = getArtifactDest(organization, module, version)
+        artifactFolder = getArtifactDest(organization, repo, version)
         needsToBeBuild = checkCommitHashAndUpdate(clone_dir, artifactFolder)
 
         generatedFileExists = os.path.exists(os.path.join(artifactFolder, "*.sha1"))
@@ -87,14 +93,14 @@ def handle_artifact_request(targetHostUrl, organization, module, version):
         
         if artifact_files:
             # TODO: when artifact already exists write log or fail, or keep original name somehow?
-            dest_file = save_artifact(artifact_files, organization, module, version)
+            dest_file = save_artifact(artifact_files, organization, repo, version)
             print("dest_file")
             print(dest_file)
             packaging = getPackagings(artifact_files)
             print("packaging")
             print(packaging)
-            generate_maven_metadata(organization, module, version)
-            generate_pom_file(organization, module, version, packaging)
+            generate_maven_metadata(organization, repo, version)
+            generate_pom_file(organization, repo, version, packaging)
             print("finished serving file " + dest_file)
             return dest_file
         

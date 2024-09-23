@@ -29,7 +29,7 @@ def synchronized(wrapped):
 
 
 @synchronized   
-def log_method_output(method, args, kwargs, organization, module, version, file_name):
+def log_method_output(method, args, kwargs, organization, repo, version, file_name):
     """
     Executes a method and logs its output and errors to a file while preventing stdout and stderr output to the console.
 
@@ -42,7 +42,7 @@ def log_method_output(method, args, kwargs, organization, module, version, file_
     :param file_name: The base name of the file to include the timestamp.
     """
     timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-    log_dir = os.path.join(LOCAL_LOGS_PATH, organization, module, version)
+    log_dir = os.path.join(LOCAL_LOGS_PATH, organization, repo, version)
     
     # Ensure the target folder exists
     os.makedirs(log_dir, exist_ok=True)

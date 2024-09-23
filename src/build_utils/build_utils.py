@@ -69,9 +69,9 @@ def getPackagings(artifact_files):
         packagings.append(packageing)
     return packageing
 
-def getArtifactDest(organization, module, version):
+def getArtifactDest(organization, repo, version):
     group_path = organization.replace('.', '/')
-    dest_dir = os.path.join(LOCAL_REPO_PATH, group_path, module, version)
+    dest_dir = os.path.join(LOCAL_REPO_PATH, group_path, repo, version)
     return dest_dir
 
 def getEnding(artifact):
@@ -82,14 +82,22 @@ def remove_line_with_partial_match(file_path, match_string):
     replace_line_with_partial_match(file_path, match_string, "")
 
 def replace_line_with_partial_match(file_path, match_string, replacement_string):
-    with open(file_path, 'r') as file:
-        lines = file.readlines()
-    new_lines = [replacement_string if match_string in line else line for line in lines]
-    with open(file_path, 'w') as file:
-        file.writelines(new_lines)
+    try:
+        with open(file_path, 'r') as file:
+            lines = file.readlines()
+        new_lines = [replacement_string if match_string in line else line for line in lines]
+        with open(file_path, 'w') as file:
+            file.writelines(new_lines)
+    except:
+        # print('could not replace', file_path, old_line, new_line)
+        pass
 
 def replace_in_file(file_path, old_line, new_line):
-    with open(file_path, 'r') as file:
-        content = file.read().replace(old_line, new_line)
-    with open(file_path, 'w') as file:
-        file.write(content)
+    try:
+        with open(file_path, 'r') as file:
+            content = file.read().replace(old_line, new_line)
+        with open(file_path, 'w') as file:
+            file.write(content)
+    except:
+        # print('could not replace', file_path, old_line, new_line)
+        pass
