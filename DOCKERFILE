@@ -3,22 +3,23 @@ FROM python:3.11-alpine
 
 # Set environment variables
 ENV ANDROID_HOME=/opt/android-sdk
+ENV ANDROID_SDK_ROOT=/opt/android-sdk
 ENV JAVA_8_HOME=/usr/lib/jvm/java-8
 ENV JAVA_11_HOME=/usr/lib/jvm/java-11
 ENV JAVA_17_HOME=/usr/lib/jvm/java-17
 ENV JAVA_21_HOME=/usr/lib/jvm/java-21
 ENV PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
 
-# Install necessary tools
+# Install necessary build tools, git, maven, and OpenJDKs
 RUN apk update && \
-    apk add --no-cache bash wget curl unzip zip openjdk8 openjdk11 openjdk17 openjdk21
+    apk add --no-cache bash wget curl unzip zip git maven openjdk8 openjdk11 openjdk17 openjdk21
 
-# Manually create symlinks for the different JDK versions
+# Create symlinks for the different JDK versions
 RUN mkdir -p /usr/lib/jvm && \
-    ln -s /usr/lib/jvm/java-1.8-openjdk /usr/lib/jvm/java-8 && \
-    ln -s /usr/lib/jvm/java-11-openjdk /usr/lib/jvm/java-11 && \
-    ln -s /usr/lib/jvm/java-17-openjdk /usr/lib/jvm/java-17 && \
-    ln -s /usr/lib/jvm/java-21-openjdk /usr/lib/jvm/java-21
+    ln -sf /usr/lib/jvm/java-1.8-openjdk /usr/lib/jvm/java-8 && \
+    ln -sf /usr/lib/jvm/java-11-openjdk /usr/lib/jvm/java-11 && \
+    ln -sf /usr/lib/jvm/java-17-openjdk /usr/lib/jvm/java-17 && \
+    ln -sf /usr/lib/jvm/java-21-openjdk /usr/lib/jvm/java-21
 
 # Default to Java 17
 ENV JAVA_HOME=$JAVA_17_HOME
@@ -27,19 +28,24 @@ ENV PATH=$JAVA_HOME/bin:$PATH
 # Install Android SDK command line tools
 RUN mkdir -p ${ANDROID_HOME}/cmdline-tools && \
     wget -q https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip -O commandlinetools.zip && \
-    unzip commandlinetools.zip -d ${ANDROID_HOME}/cmdline-tools && \
+    unzip -q commandlinetools.zip -d ${ANDROID_HOME}/cmdline-tools && \
     rm commandlinetools.zip && \
     mv ${ANDROID_HOME}/cmdline-tools/cmdline-tools ${ANDROID_HOME}/cmdline-tools/latest
 
 # Install Android SDK components
-RUN yes | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses && \
-    ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-30"
+RUN yes | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses || true && \
+    ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-30" || true
 
 WORKDIR /app
 COPY . /app
 
 RUN pip install --no-cache-dir -r requirements.txt
-VOLUME ["/app/repo"]
+
+# Persist repository artifacts, temporary builds, and logs
+VOLUME ["/app/repo", "/app/tmp", "/app/logs"]
 
 EXPOSE 5000
-CMD ["gunicorn", "-w", "1", "-b", "127.0.0.1:8000", "--chdir", "src/", "src:app"]
+
+# Start server bound to 0.0.0.0:5000
+CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:5000", "--chdir", "src", "app:app"]
+

@@ -1,63 +1,101 @@
 import os
 import time
+import shutil
 from pathlib import Path
-import schedule
 from threading import Thread
+import schedule
 from consts import LOCAL_CLONE_PATH, LOCAL_REPO_PATH
-
-DAYS = 1
+from config import get_config
 
 def startCronCleaner():
-    flask_thread = Thread(target=run_scheduler)
-    flask_thread.start()
+    """Starts the background cleaner daemon thread."""
+    cleaner_thread = Thread(target=run_scheduler, daemon=True)
+    cleaner_thread.start()
 
+def is_folder_older_than(dir_path: str, cutoff_timestamp: float) -> bool:
+    """Checks if a directory and all files inside it are older than cutoff_timestamp."""
+    try:
+        if os.path.getmtime(dir_path) >= cutoff_timestamp:
+            return False
+        for root, dirs, files in os.walk(dir_path):
+            for file in files:
+                f_path = os.path.join(root, file)
+                if os.path.getmtime(f_path) >= cutoff_timestamp:
+                    return False
+        return True
+    except (FileNotFoundError, OSError):
+        return False
 
-def all_files_old(directory, cutoff):
-    """Überprüft, ob alle Dateien in einem Verzeichnis älter sind als der cutoff-Zeitpunkt."""
-    all_old = True
-    for filename in os.listdir(directory):
-        file_path = Path(directory) / filename
-        if file_path.is_file():
-            if os.path.getmtime(file_path) >= cutoff:
-                all_old = False
-                break
-    return all_old
+def clean_tmp_directories(max_days: int):
+    """Deletes temporary build folders in LOCAL_CLONE_PATH older than max_days."""
+    if max_days <= 0 or not os.path.exists(LOCAL_CLONE_PATH):
+        return
 
-def delete_empty_directories(directory, days):
-    now = time.time()
-    cutoff = now - (days * 86400)  # Tage in Sekunden umrechnen
+    cutoff = time.time() - (max_days * 86400)
+    for entry in os.listdir(LOCAL_CLONE_PATH):
+        entry_path = os.path.join(LOCAL_CLONE_PATH, entry)
+        if os.path.isdir(entry_path):
+            if is_folder_older_than(entry_path, cutoff):
+                print(f"[CronCleaner] Deleting old build clone: {entry_path}")
+                try:
+                    shutil.rmtree(entry_path, ignore_errors=True)
+                except Exception as e:
+                    print(f"[CronCleaner] Error removing {entry_path}: {e}")
 
-    def recursive_delete(dir_path):
-        """Rekursiv leere Verzeichnisse löschen, wenn alle Dateien älter sind."""
-        for entry in os.listdir(dir_path):
-            entry_path = Path(dir_path) / entry
-            if entry_path.is_dir():
-                # Zuerst in Unterverzeichnisse gehen
-                recursive_delete(entry_path)
-        
-        # Lösche das Verzeichnis, wenn alle Dateien und Unterverzeichnisse die Bedingung erfüllen
-        if all_files_old(dir_path, cutoff) and not os.listdir(dir_path):
+def clean_old_artifacts(max_days: int):
+    """Deletes cached repository artifacts in LOCAL_REPO_PATH older than max_days."""
+    if max_days <= 0 or not os.path.exists(LOCAL_REPO_PATH):
+        return
+
+    cutoff = time.time() - (max_days * 86400)
+    for root, dirs, files in os.walk(LOCAL_REPO_PATH, topdown=False):
+        for file in files:
+            f_path = os.path.join(root, file)
             try:
-                os.rmdir(dir_path)
-                print(f"Deleting folder {dir_path}...")
-            except OSError as e:
-                # Falls das Verzeichnis nicht gelöscht werden kann (z.B. weil es noch nicht leer ist)
-                print(f"Could not delete folder {dir_path}: {e}")
+                # Use max of atime and mtime
+                stat = os.stat(f_path)
+                last_used = max(stat.st_mtime, getattr(stat, 'st_atime', stat.st_mtime))
+                if last_used < cutoff:
+                    print(f"[CronCleaner] Deleting expired artifact: {f_path}")
+                    os.remove(f_path)
+            except Exception as e:
+                print(f"[CronCleaner] Error checking/removing artifact {f_path}: {e}")
 
-    # Suche alle obersten Verzeichnisse im angegebenen Verzeichnis
-    for item in os.listdir(directory):
-        item_path = Path(directory) / item
-        if item_path.is_dir():
-            recursive_delete(item_path)
+    # Remove empty directories
+    delete_empty_directories(LOCAL_REPO_PATH)
 
+def delete_empty_directories(directory: str):
+    """Recursively removes empty directories."""
+    if not os.path.exists(directory):
+        return
+    for root, dirs, files in os.walk(directory, topdown=False):
+        for d in dirs:
+            dir_path = os.path.join(root, d)
+            try:
+                if not os.listdir(dir_path):
+                    os.rmdir(dir_path)
+            except OSError:
+                pass
 
+def run_cleanup_now():
+    """Runs a complete cleanup pass immediately."""
+    config = get_config()
+    delete_tmp_days = int(config.get("DELETE_TMP", -1))
+    delete_artifacts_days = int(config.get("DELETE_ARTIFACTS", -1))
 
-def run_cleanup():
-    all_files_old(LOCAL_CLONE_PATH, DAYS)
+    print(f"[CronCleaner] Starting cleanup (DELETE_TMP={delete_tmp_days}, DELETE_ARTIFACTS={delete_artifacts_days})")
+    if delete_tmp_days > 0:
+        clean_tmp_directories(delete_tmp_days)
+    if delete_artifacts_days > 0:
+        clean_old_artifacts(delete_artifacts_days)
 
 def run_scheduler():
-    schedule.every().day.at("00:00").do(run_cleanup)
-
+    # Schedule daily cleanup at midnight
+    schedule.every().day.at("00:00").do(run_cleanup_now)
+    # Also run every hour to check pending
     while True:
-        schedule.run_pending()
-        time.sleep(3600)  # wait to not use cpu.
+        try:
+            schedule.run_pending()
+        except Exception as e:
+            print(f"[CronCleaner] Scheduler error: {e}")
+        time.sleep(300)
