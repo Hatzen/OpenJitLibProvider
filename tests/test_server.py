@@ -1,6 +1,7 @@
 import subprocess
 import time
 import os
+import sys
 import unittest
 import shutil
 
@@ -10,23 +11,29 @@ class TestGradleBuild(unittest.TestCase):
         """
         Start the Flask server in the background.
         """
+        init_script = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src', '__init__.py'))
         cls.server_process = subprocess.Popen(
-            ['python',  '-m', 'gunicorn', '-w', '4', '-b', '0.0.0.0:5000', '../src/__init__.py:app'],
+            [sys.executable, init_script],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
         )
         
         # Wait for the server to start
-        time.sleep(5)
+        time.sleep(3)
     
     @classmethod
     def tearDownClass(cls):
         """
         Terminate the Flask server after the test.
         """
-        cls.server_process.terminate()
-        cls.server_process.wait()
+        if cls.server_process:
+            cls.server_process.terminate()
+            try:
+                cls.server_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                cls.server_process.kill()
+
 
     def run_gradle_build(self, module, version):
         """

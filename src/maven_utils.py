@@ -1,74 +1,89 @@
 import os
-import datetime
 import hashlib
-from consts import LOCAL_CLONE_PATH, LOCAL_REPO_PATH
-
-import os
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from datetime import datetime
+from consts import LOCAL_REPO_PATH
 
-
-def generate_maven_metadata(organization, repo, version):
-    group_path = organization.replace('.', '/')
-    artifact_dir = os.path.join(LOCAL_REPO_PATH, group_path, repo)
-    
-    metadata_path = os.path.join(artifact_dir, "maven-metadata.xml")
-
-
-    # Example parameters
-    group_id = organization # "com.github.test-repo"
-    artifact_id = repo # "module"
-    # TODO: Check if we get the Snapshot postfix here already.
-    is_snapshot = "SNAPSHOT" in version  # Automatically detect if it's a snapshot version
-    
-    # Create or update the metadata file
-    create_or_update_metadata_file(group_id, artifact_id, version, metadata_path, is_snapshot)
-
-def generate_pom_file(organization, module, version, packaging):
-    group_path = organization.replace('.', '/')
-    artifact_dir = os.path.join(LOCAL_REPO_PATH, group_path, module, version)
-
-    pom_file_path = os.path.join(artifact_dir, f"{module}-{version}{packaging}.pom")
-    
-    if not os.path.exists(pom_file_path):
-        pom_content = f"""<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-<modelVersion>4.0.0</modelVersion>
-<groupId>com.github.{organization}</groupId>
-<artifactId>{module}</artifactId>
-<version>{version}</version>
-<packaging>{packaging}</packaging>
-<name>{module}</name>
-<description>Auto-generated POM for {module}</description>
-</project>"""
-    
-        with open(pom_file_path, "w") as f:
-            f.write(pom_content)
-            
-            write_sha1_to_file(pom_file_path)
-
-def generate_sha1(file_path):
+def generate_sha1(file_path: str) -> str:
+    """Generates SHA1 checksum for a file."""
     sha1 = hashlib.sha1()
     try:
         with open(file_path, 'rb') as file:
             while chunk := file.read(8192):
                 sha1.update(chunk)
+        return sha1.hexdigest()
     except (FileNotFoundError, IOError) as e:
         print(f"Error generating SHA1 for {file_path}: {e}")
-        return None
-    
-    return sha1.hexdigest()
+        return ""
 
-def write_sha1_to_file(pom_file_path):
-    sha1_hash = generate_sha1(pom_file_path)
-    if sha1_hash:
-        sha1_file_path = f"{pom_file_path}.sha1"
-        with open(sha1_file_path, 'w') as sha1_file:
-            sha1_file.write(sha1_hash + '\n')
+def generate_md5(file_path: str) -> str:
+    """Generates MD5 checksum for a file."""
+    md5 = hashlib.md5()
+    try:
+        with open(file_path, 'rb') as file:
+            while chunk := file.read(8192):
+                md5.update(chunk)
+        return md5.hexdigest()
+    except (FileNotFoundError, IOError) as e:
+        print(f"Error generating MD5 for {file_path}: {e}")
+        return ""
 
+def write_checksums_for_file(file_path: str):
+    """Writes both .sha1 and .md5 checksum files."""
+    sha1 = generate_sha1(file_path)
+    if sha1:
+        with open(f"{file_path}.sha1", 'w', encoding='utf-8') as f:
+            f.write(sha1 + '\n')
+
+    md5 = generate_md5(file_path)
+    if md5:
+        with open(f"{file_path}.md5", 'w', encoding='utf-8') as f:
+            f.write(md5 + '\n')
+
+def generate_maven_metadata(group_id: str, artifact_id: str, version: str, repo_base_path: str = None):
+    """Generates or updates maven-metadata.xml in the artifact directory."""
+    if repo_base_path is None:
+        group_path = group_id.replace('.', os.sep).replace('/', os.sep)
+        artifact_dir = os.path.join(LOCAL_REPO_PATH, group_path, artifact_id)
+    else:
+        artifact_dir = repo_base_path
+
+    os.makedirs(artifact_dir, exist_ok=True)
+    metadata_path = os.path.join(artifact_dir, "maven-metadata.xml")
+    is_snapshot = "SNAPSHOT" in version
+
+    create_or_update_metadata_file(group_id, artifact_id, version, metadata_path, is_snapshot)
+    write_checksums_for_file(metadata_path)
+
+def generate_pom_file(group_id: str, module: str, version: str, packaging: str = "jar", artifact_dir: str = None):
+    """Generates a standard POM file and corresponding SHA1 and MD5 checksums."""
+    if artifact_dir is None:
+        group_path = group_id.replace('.', os.sep).replace('/', os.sep)
+        artifact_dir = os.path.join(LOCAL_REPO_PATH, group_path, module, version)
+
+    os.makedirs(artifact_dir, exist_ok=True)
+    clean_packaging = packaging.lstrip('.').lower() if packaging else "jar"
+    pom_file_path = os.path.join(artifact_dir, f"{module}-{version}.pom")
+
+    pom_content = f"""<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>{group_id}</groupId>
+    <artifactId>{module}</artifactId>
+    <version>{version}</version>
+    <packaging>{clean_packaging}</packaging>
+    <name>{module}</name>
+    <description>Artifact provided by OpenJitLibProvider for {module}</description>
+</project>
+"""
+    with open(pom_file_path, "w", encoding='utf-8') as f:
+        f.write(pom_content)
+
+    write_checksums_for_file(pom_file_path)
+    return pom_file_path
 
 def prettify_xml(elem):
     """Return a pretty-printed XML string for the Element."""
@@ -78,38 +93,59 @@ def prettify_xml(elem):
 
 def create_or_update_metadata_file(group_id, artifact_id, version, metadata_path, is_snapshot=False):
     """Creates or updates a maven-metadata.xml file with a new version."""
-    
-    # Check if metadata file exists
     if os.path.exists(metadata_path):
-        # Load the existing metadata file
-        tree = ET.parse(metadata_path)
-        root = tree.getroot()
+        try:
+            tree = ET.parse(metadata_path)
+            root = tree.getroot()
+        except Exception:
+            root = ET.Element("metadata")
     else:
-        # Create a new metadata XML structure
         root = ET.Element("metadata")
+
+    if root.find("groupId") is None:
         group_id_element = ET.SubElement(root, "groupId")
         group_id_element.text = group_id
+    else:
+        root.find("groupId").text = group_id
 
+    if root.find("artifactId") is None:
         artifact_id_element = ET.SubElement(root, "artifactId")
         artifact_id_element.text = artifact_id
-
-        versioning = ET.SubElement(root, "versioning")
-        latest = ET.SubElement(versioning, "latest")
-        release = ET.SubElement(versioning, "release")
-        versions = ET.SubElement(versioning, "versions")
-        last_updated = ET.SubElement(versioning, "lastUpdated")
+    else:
+        root.find("artifactId").text = artifact_id
 
     versioning = root.find("versioning")
+    if versioning is None:
+        versioning = ET.SubElement(root, "versioning")
 
-    # Handle snapshot versions
-    if is_snapshot and "SNAPSHOT" in version:
+    latest = versioning.find("latest")
+    if latest is None:
+        latest = ET.SubElement(versioning, "latest")
+    latest.text = version
+
+    release = versioning.find("release")
+    if release is None:
+        release = ET.SubElement(versioning, "release")
+    if not is_snapshot:
+        release.text = version
+
+    versions = versioning.find("versions")
+    if versions is None:
+        versions = ET.SubElement(versioning, "versions")
+
+    existing_versions = [v.text for v in versions.findall("version")]
+    if version not in existing_versions:
+        new_version = ET.SubElement(versions, "version")
+        new_version.text = version
+
+    if is_snapshot:
         snapshot_element = versioning.find("snapshot")
         if snapshot_element is None:
             snapshot_element = ET.SubElement(versioning, "snapshot")
-        
-        # Set timestamp and build number
-        timestamp = datetime.utcnow().strftime('%Y%m%d.%H%M%S')
-        build_number = "1"  # This could be incremented based on custom logic
+
+        now_utc = datetime.utcnow()
+        timestamp = now_utc.strftime('%Y%m%d.%H%M%S')
+        build_number = "1"
 
         timestamp_element = snapshot_element.find("timestamp")
         if timestamp_element is None:
@@ -121,43 +157,11 @@ def create_or_update_metadata_file(group_id, artifact_id, version, metadata_path
             build_number_element = ET.SubElement(snapshot_element, "buildNumber")
         build_number_element.text = build_number
 
-        # Add to snapshotVersions
-        snapshot_versions = versioning.find("snapshotVersions")
-        if snapshot_versions is None:
-            snapshot_versions = ET.SubElement(versioning, "snapshotVersions")
-
-        jar_snapshot_version = ET.SubElement(snapshot_versions, "snapshotVersion")
-        extension = ET.SubElement(jar_snapshot_version, "extension")
-        extension.text = "jar"
-        value = ET.SubElement(jar_snapshot_version, "value")
-        value.text = f"{version.replace('SNAPSHOT', '')}-{timestamp}-{build_number}"
-        updated = ET.SubElement(jar_snapshot_version, "updated")
-        updated.text = datetime.utcnow().strftime('%Y%m%d%H%M%S')
-
-        pom_snapshot_version = ET.SubElement(snapshot_versions, "snapshotVersion")
-        extension_pom = ET.SubElement(pom_snapshot_version, "extension")
-        extension_pom.text = "pom"
-        value_pom = ET.SubElement(pom_snapshot_version, "value")
-        value_pom.text = f"{version.replace('SNAPSHOT', '')}-{timestamp}-{build_number}"
-        updated_pom = ET.SubElement(pom_snapshot_version, "updated")
-        updated_pom.text = datetime.utcnow().strftime('%Y%m%d%H%M%S')
-
-    # Handle regular (non-SNAPSHOT) versions
-    else:
-        # Update latest and release versions for non-SNAPSHOT
-        versioning.find("latest").text = version
-        versioning.find("release").text = version
-
-        # Check if the version already exists
-        versions = versioning.find("versions")
-        if version not in [v.text for v in versions.findall("version")]:
-            new_version = ET.SubElement(versions, "version")
-            new_version.text = version
-
-    # Update the last updated timestamp
     now = datetime.utcnow().strftime('%Y%m%d%H%M%S')
-    versioning.find("lastUpdated").text = now
+    last_updated = versioning.find("lastUpdated")
+    if last_updated is None:
+        last_updated = ET.SubElement(versioning, "lastUpdated")
+    last_updated.text = now
 
-    # Pretty-print and save the XML
-    with open(metadata_path, "w") as f:
-        f.write(prettify_xml(root))
+    with open(metadata_path, "w", encoding='utf-8') as f:
+        f.write(prettify_xml(root))

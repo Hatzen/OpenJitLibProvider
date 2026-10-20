@@ -1,17 +1,19 @@
 NEXUS_PORT: 5000
 JAVA_HOME:
     "1.8":  "/usr/lib/jvm/java-8/"
+    "8":    "/usr/lib/jvm/java-8/"
     "1.11": "/usr/lib/jvm/java-11/"
+    "11":   "/usr/lib/jvm/java-11/"
     "1.17": "/usr/lib/jvm/java-17/"
+    "17":   "/usr/lib/jvm/java-17/"
     "1.21": "/usr/lib/jvm/java-21/"
+    "21":   "/usr/lib/jvm/java-21/"
 ANDROID_SDK_ROOT: "/opt/android-sdk"
 KNOWN_HOSTS:
-    # package prefix : url prefix
     "com.github": "github.com"
-    "com.azure": "azure.com"
+    "com.azure": "dev.azure.com"
     "com.gitee": "gitee.com"
-    "org.bitbucket": "bitbucket.com"
+    "org.bitbucket": "bitbucket.org"
     "com.gitlab": "gitlab.com"
-# Cleanup schedule in days.
 DELETE_ARTIFACTS: -1
-DELETE_TMP: -1
+DELETE_TMP: 1

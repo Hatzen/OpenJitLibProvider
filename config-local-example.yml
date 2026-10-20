@@ -1,27 +1,35 @@
-# Example file needs to be customized for local environment:
-# and then renamed to ./config.yml
+# OpenJitLibProvider Configuration
+# Copy this file to ./config.yml and customize for your environment.
 
-# local port to use
+# Server HTTP Port
 NEXUS_PORT: 5000
-# JAVA_HOME: "C:/Program Files/Java/openlogic-openjdk-8u422-b05-windows-x64/"
-JAVA_HOME:
-    "1.8": "C:/Program Files/Java/openlogic-openjdk-8u422-b05-windows-x64/"
 
-# Make sure to accept the license for the sdk.
+# JDK Installations for cross-version Gradle & Maven builds
+# Provide paths for installed JDKs on your system (Windows or Linux)
+JAVA_HOME:
+  "8": "C:/Program Files/Java/jdk-8"
+  "11": "C:/Program Files/Java/jdk-11"
+  "17": "C:/Program Files/Java/jdk-17"
+  "21": "C:/Program Files/Java/jdk-21"
+
+# Android SDK Path (for Android library builds)
 ANDROID_SDK_ROOT: "C:/Users/user/AppData/Local/Android/Sdk"
 
-# repos
+# Known Git Hosts Mapping
+# package prefix : git domain
 KNOWN_HOSTS:
-    # package prefix : url prefix
-    "com.github": "github.com"
-    "com.azure": "azure.com"
-    "com.gitee": "gitee.com"
-    "org.bitbucket": "bitbucket.com"
-    "com.gitlab": "gitlab.com"
-    "com.mycustom-example-host": "mycustom-example-host.com/repos"
-REPOSITORY_TOKENS:
-    ExampleNameProvider: "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"
+  "com.github": "github.com"
+  "com.gitlab": "gitlab.com"
+  "org.bitbucket": "bitbucket.org"
+  "com.gitee": "gitee.com"
+  "com.azure": "dev.azure.com"
 
-# Cleanup schedule in days.
-DELETE_ARTIFACTS: -1
-DELETE_TMP: -1
+# Authentication tokens for private repositories
+# Lookup matches by 'owner/repo', 'repo', 'owner', or 'default'
+REPOSITORY_TOKENS:
+  "default": ""
+  "ExampleOwner/ExampleRepo": "github_pat_xxxx"
+
+# Automated cleanup schedule in days (-1 to disable)
+DELETE_ARTIFACTS: -1   # Delete unused repo artifacts older than N days
+DELETE_TMP: 1          # Delete temporary build clones older than N days

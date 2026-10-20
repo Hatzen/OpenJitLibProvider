@@ -1,7 +1,8 @@
 repo/
 tmp/
-src/**/__pycache__
-**/.gradle
-**/build
 logs/
 /config.yml
+__pycache__/
+*.pyc
+**/.gradle
+**/build
