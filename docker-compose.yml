@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  openjitlib:
+    build: .
+    image: openjitlibprovider:latest
+    container_name: openjitlibprovider
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+    volumes:
+      - ./repo:/app/repo
+      - ./logs:/app/logs
+      - ./tmp:/app/tmp
+      - ./config.yml:/app/config.yml:ro
